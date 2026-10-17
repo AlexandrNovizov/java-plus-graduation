@@ -19,5 +19,13 @@ spring:
     username: main
     password: main
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 2000
+            readTimeout: 3000
+
 stats-service:
   id: stat-service

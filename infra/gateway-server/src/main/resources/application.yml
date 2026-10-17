@@ -9,3 +9,13 @@ spring:
       fail-fast: true
   config:
     import: 'configserver:'
+
+management:
+  endpoint:
+    gateway:
+      enabled: true
+      access: read-only
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
