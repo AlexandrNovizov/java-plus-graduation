@@ -2,12 +2,14 @@ package ru.practicum.entity.comment;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.practicum.dto.comment.CommentDto;
-import ru.practicum.dto.comment.LogComment;
-import ru.practicum.dto.comment.NewCommentDto;
-import ru.practicum.dto.comment.UserCommentAdminDto;
-import ru.practicum.entity.event.Event;
-import ru.practicum.entity.user.User;
+import ru.practicum.main.dto.comment.CommentDto;
+import ru.practicum.main.dto.comment.LogComment;
+import ru.practicum.main.dto.comment.NewCommentDto;
+import ru.practicum.main.dto.comment.UserCommentAdminDto;
+import ru.practicum.main.entity.comment.Comment;
+import ru.practicum.main.entity.comment.CommentMapper;
+import ru.practicum.main.entity.event.Event;
+import ru.practicum.main.entity.user.User;
 
 import java.time.LocalDateTime;
 import java.util.List;

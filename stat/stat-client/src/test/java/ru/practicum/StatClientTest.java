@@ -1,34 +1,45 @@
 package ru.practicum;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import ru.practicum.client.StatClient;
+import ru.practicum.client.StatsRequest;
+import ru.practicum.client.feign.FeignStatClient;
 
 import java.util.List;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
+import static org.hamcrest.CoreMatchers.equalTo;
 
-@RestClientTest(components = StatClient.class, properties = "client.url=http://localhost:9090")
-@Import(RestConfig.class)
+@SpringBootTest(classes = StatClientTest.TestConfig.class)
+@ActiveProfiles("test")
+@ExtendWith(SpringExtension.class)
 class StatClientTest {
 
     @SpringBootApplication
-    @EnableAutoConfiguration
+    @EnableFeignClients(clients = FeignStatClient.class)
+    @Import({WireMockConfig.class})
     static class TestConfig {
     }
+
+    @Autowired
+    private WireMockServer wireMockServer;
 
     @Autowired
     private StatClient statClient;
@@ -36,10 +47,10 @@ class StatClientTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
-    private MockRestServiceServer mockServer;
-
-    private static final String BASE_URL = "http://localhost:9090";
+    @BeforeEach
+    public void setUp() {
+        wireMockServer.resetAll();
+    }
 
     @Test
     @SneakyThrows
@@ -52,45 +63,57 @@ class StatClientTest {
                 "192.168.1.1",
                 "2026-06-18 10:00:00");
 
-        mockServer.expect(requestTo(BASE_URL + "/hit"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().json(objectMapper.writeValueAsString(endpointHit)))
-                .andRespond(withStatus(HttpStatus.CREATED));
+        wireMockServer.stubFor(post(urlEqualTo("/hit"))
+                .withHeader("Content-Type", containing("application/json"))
+                .withRequestBody(equalToJson(
+                        objectMapper.writeValueAsString(endpointHit)
+                ))
+                .willReturn(aResponse().withStatus(201)));
 
         statClient.hit(endpointHit);
 
-        mockServer.verify();
+        wireMockServer.verify(postRequestedFor(urlEqualTo("/hit")));
     }
 
     @Test
     @SneakyThrows
     @DisplayName("Успешный запрос статистики с сервера.")
     void getViewStats_shouldReturnStatsList() {
+        String uri = "/events/1";
         StatsRequest request = new StatsRequest(
                 "2020-05-05 00:00:00",
                 "2035-05-05 00:00:00",
-                List.of("/events/1"),
+                List.of(uri),
                 true
         );
 
         List<ViewStats> expectedStats = List.of(new ViewStats("ewm-main","/events/1",5L));
 
-        mockServer.expect(requestTo(startsWith(BASE_URL + "/stats")))
-                .andExpect(method(HttpMethod.GET))
-                .andExpect(queryParam("start", request.getStartTime().replace(" ", "%20")))
-                .andExpect(queryParam("end", request.getEndTime().replace(" ", "%20")))
-                .andExpect(queryParam("uris",request.getUris().getFirst()))
-                .andExpect(queryParam("unique","true"))
-                .andRespond(withSuccess(objectMapper.writeValueAsString(expectedStats), MediaType.APPLICATION_JSON));
+        wireMockServer.stubFor(get(urlPathEqualTo("/stats"))
+                .withQueryParam("start", WireMock.equalTo(request.getStart()))
+                .withQueryParam("end", WireMock.equalTo(request.getEnd()))
+                .withQueryParam("uris", WireMock.equalTo(uri))
+                .withQueryParam("unique", WireMock.equalTo("true"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(objectMapper.writeValueAsString(expectedStats))
+                ));
 
         List<ViewStats> response = statClient.getViewStats(request);
 
+        wireMockServer.verify(
+                getRequestedFor(urlPathEqualTo("/stats"))
+                        .withQueryParam("start", WireMock.equalTo(request.getStart()))
+                        .withQueryParam("end", WireMock.equalTo(request.getEnd()))
+                        .withQueryParam("uris", WireMock.equalTo(uri))
+                        .withQueryParam("unique", WireMock.equalTo("true"))
+        );
+
         assertThat(response, hasSize(1));
         assertThat(response.getFirst().getApp(), equalTo("ewm-main"));
+        assertThat(response.getFirst().getApp(), equalTo("ewm-main"));
         assertThat(response.getFirst().getHits(), equalTo(5L));
-
-        mockServer.verify();
     }
 
     @Test
@@ -103,13 +126,13 @@ class StatClientTest {
                 true
         );
 
-        mockServer.expect(requestTo(startsWith(BASE_URL + "/stats")))
-                .andRespond(withServerError());
+        wireMockServer.stubFor(get(urlPathEqualTo("/stats"))
+                .willReturn(aResponse().withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())));
 
         List<ViewStats> response = statClient.getViewStats(request);
 
         assertThat(response, empty());
 
-        mockServer.verify();
+        wireMockServer.verify(1, getRequestedFor(urlPathEqualTo("/stats")));
     }
 }

@@ -7,10 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.dto.event.EventFullDto;
-import ru.practicum.dto.event.EventPublicParamDto;
-import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.entity.event.EventService;
+import ru.practicum.main.controller.public_api.EventPublicController;
+import ru.practicum.main.dto.event.EventFullDto;
+import ru.practicum.main.dto.event.EventPublicParamDto;
+import ru.practicum.main.dto.event.EventShortDto;
+import ru.practicum.main.entity.event.EventService;
 
 import java.util.List;
 

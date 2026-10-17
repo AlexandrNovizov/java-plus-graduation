@@ -1,8 +1,10 @@
 package ru.practicum.entity.category;
 
 import org.junit.jupiter.api.Test;
-import ru.practicum.dto.category.CategoryDto;
-import ru.practicum.dto.category.NewCategoryDto;
+import ru.practicum.main.dto.category.CategoryDto;
+import ru.practicum.main.dto.category.NewCategoryDto;
+import ru.practicum.main.entity.category.Category;
+import ru.practicum.main.entity.category.CategoryMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

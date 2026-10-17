@@ -3,14 +3,16 @@ package ru.practicum.entity.compilation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import ru.practicum.dto.compilation.CompilationDto;
-import ru.practicum.dto.compilation.LogCompilation;
-import ru.practicum.dto.compilation.NewCompilationDto;
-import ru.practicum.dto.event.EventShortDto;
+import ru.practicum.main.dto.compilation.CompilationDto;
+import ru.practicum.main.dto.compilation.LogCompilation;
+import ru.practicum.main.dto.compilation.NewCompilationDto;
+import ru.practicum.main.dto.event.EventShortDto;
 
-import ru.practicum.entity.category.Category;
-import ru.practicum.entity.event.Event;
-import ru.practicum.entity.user.User;
+import ru.practicum.main.entity.category.Category;
+import ru.practicum.main.entity.compilation.Compilation;
+import ru.practicum.main.entity.compilation.CompilationMapper;
+import ru.practicum.main.entity.event.Event;
+import ru.practicum.main.entity.user.User;
 
 import java.time.LocalDateTime;
 import java.util.*;

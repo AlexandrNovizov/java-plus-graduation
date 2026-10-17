@@ -1,9 +1,12 @@
 package ru.practicum.entity.request;
 
 import org.junit.jupiter.api.Test;
-import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.entity.event.Event;
-import ru.practicum.entity.user.User;
+import ru.practicum.main.dto.request.ParticipationRequestDto;
+import ru.practicum.main.entity.event.Event;
+import ru.practicum.main.entity.request.Request;
+import ru.practicum.main.entity.request.RequestMapper;
+import ru.practicum.main.entity.request.RequestStatus;
+import ru.practicum.main.entity.user.User;
 
 import java.time.LocalDateTime;
 import java.util.Collections;

@@ -2,7 +2,7 @@ package ru.practicum.service;
 
 import org.junit.jupiter.api.Test;
 import ru.practicum.EndpointHit;
-import ru.practicum.exception.ValidationException;
+import ru.practicum.client.exception.ValidationException;
 import ru.practicum.model.EndpointHitEntity;
 
 import java.time.LocalDateTime;

@@ -7,8 +7,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.dto.comment.UserCommentAdminDto;
-import ru.practicum.entity.comment.CommentService;
+import ru.practicum.main.controller.admin.CommentAdminController;
+import ru.practicum.main.dto.comment.UserCommentAdminDto;
+import ru.practicum.main.entity.comment.CommentService;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;

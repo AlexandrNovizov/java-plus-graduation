@@ -1,11 +1,14 @@
 package ru.practicum.entity.event;
 
 import org.junit.jupiter.api.Test;
-import ru.practicum.dto.event.EventFullDto;
-import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.dto.event.Location;
-import ru.practicum.entity.category.Category;
-import ru.practicum.entity.user.User;
+import ru.practicum.main.dto.event.EventFullDto;
+import ru.practicum.main.dto.event.EventShortDto;
+import ru.practicum.main.dto.event.Location;
+import ru.practicum.main.entity.category.Category;
+import ru.practicum.main.entity.event.Event;
+import ru.practicum.main.entity.event.EventMapper;
+import ru.practicum.main.entity.event.EventState;
+import ru.practicum.main.entity.user.User;
 
 import java.time.LocalDateTime;
 

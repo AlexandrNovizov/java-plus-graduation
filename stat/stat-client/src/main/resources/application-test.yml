@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: stat-service
+  cloud:
+    discovery:
+      client:
+        simple:
+          instances:
+            stat-service:
+              - uri: http://localhost:80
+    loadbalancer:
+      blocking:
+        enabled: true
+      reactor:
+        enabled: true

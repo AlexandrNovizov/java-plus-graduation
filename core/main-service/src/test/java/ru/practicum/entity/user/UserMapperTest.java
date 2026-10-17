@@ -1,8 +1,10 @@
 package ru.practicum.entity.user;
 
 import org.junit.jupiter.api.Test;
-import ru.practicum.dto.user.NewUserRequest;
-import ru.practicum.dto.user.UserDto;
+import ru.practicum.main.dto.user.NewUserRequest;
+import ru.practicum.main.dto.user.UserDto;
+import ru.practicum.main.entity.user.User;
+import ru.practicum.main.entity.user.UserMapper;
 
 import java.util.List;
 
