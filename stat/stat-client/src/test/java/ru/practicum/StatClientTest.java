@@ -16,9 +16,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import ru.practicum.client.StatClient;
-import ru.practicum.client.StatsRequest;
-import ru.practicum.client.feign.FeignStatClient;
+import ru.practicum.feign.FeignStatClient;
 
 import java.util.List;
 

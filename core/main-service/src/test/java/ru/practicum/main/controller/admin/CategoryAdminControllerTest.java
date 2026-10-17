@@ -7,10 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.main.controller.admin.CategoryAdminController;
-import ru.practicum.main.dto.category.CategoryDto;
-import ru.practicum.main.dto.category.NewCategoryDto;
-import ru.practicum.main.entity.category.CategoryService;
+import ru.practicum.controller.admin.CategoryAdminController;
+import ru.practicum.dto.category.CategoryDto;
+import ru.practicum.dto.category.NewCategoryDto;
+import ru.practicum.entity.category.CategoryService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;

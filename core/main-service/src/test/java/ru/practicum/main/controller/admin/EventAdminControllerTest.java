@@ -7,11 +7,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.main.controller.admin.EventAdminController;
-import ru.practicum.main.dto.event.EventFullDto;
-import ru.practicum.main.dto.event.UpdateEventAdminRequest;
-import ru.practicum.main.entity.event.AdminStateAction;
-import ru.practicum.main.entity.event.EventService;
+import ru.practicum.controller.admin.EventAdminController;
+import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.UpdateEventAdminRequest;
+import ru.practicum.entity.event.AdminStateAction;
+import ru.practicum.entity.event.EventService;
 
 import java.util.Collections;
 

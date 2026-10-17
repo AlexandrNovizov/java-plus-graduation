@@ -11,9 +11,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.main.controller.public_api.CommentPublicController;
-import ru.practicum.main.dto.comment.CommentDto;
-import ru.practicum.main.entity.comment.CommentService;
+import ru.practicum.controller.public_api.CommentPublicController;
+import ru.practicum.dto.comment.CommentDto;
+import ru.practicum.entity.comment.CommentService;
 
 import java.util.List;
 

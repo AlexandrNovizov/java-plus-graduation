@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.EndpointHit;
 import ru.practicum.ParamDto;
 import ru.practicum.ViewStats;
-import ru.practicum.client.exception.ValidationException;
+import ru.practicum.exception.ValidationException;
 import ru.practicum.model.EndpointHitEntity;
 import ru.practicum.repository.StatRepository;
 

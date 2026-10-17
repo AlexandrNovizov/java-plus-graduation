@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.main.controller.private_api.RequestPrivateController;
-import ru.practicum.main.dto.request.ParticipationRequestDto;
-import ru.practicum.main.entity.request.RequestService;
+import ru.practicum.controller.private_api.RequestPrivateController;
+import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.entity.request.RequestService;
 
 import java.util.List;
 

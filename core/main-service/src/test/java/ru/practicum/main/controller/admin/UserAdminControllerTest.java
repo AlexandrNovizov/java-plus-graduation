@@ -8,12 +8,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.main.controller.admin.UserAdminController;
-import ru.practicum.main.dto.comment.UserCommentAdminDto;
-import ru.practicum.main.dto.user.NewUserRequest;
-import ru.practicum.main.dto.user.UserDto;
-import ru.practicum.main.dto.user.UserParamDto;
-import ru.practicum.main.entity.user.UserService;
+import ru.practicum.controller.admin.UserAdminController;
+import ru.practicum.dto.comment.UserCommentAdminDto;
+import ru.practicum.dto.user.NewUserRequest;
+import ru.practicum.dto.user.UserDto;
+import ru.practicum.dto.user.UserParamDto;
+import ru.practicum.entity.user.UserService;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
