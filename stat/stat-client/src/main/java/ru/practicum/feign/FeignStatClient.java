@@ -11,7 +11,7 @@ import ru.practicum.ViewStats;
 
 import java.util.List;
 
-@FeignClient(name = "stat-service")
+@FeignClient(name = "stats-server")
 public interface FeignStatClient {
 
     @PostMapping("/hit")
