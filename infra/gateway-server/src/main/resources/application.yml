@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: gateway-server
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        serviceId: config-server
+      fail-fast: true
+  config:
+    import: 'configserver:'
+
+management:
+  endpoint:
+    gateway:
+      enabled: true
+      access: read-only
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

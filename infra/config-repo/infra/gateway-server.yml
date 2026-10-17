@@ -1,0 +1,78 @@
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, gatewayroutes
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: admin-read
+          uri: lb://main-service
+          predicates:
+            - Path=/admin/users,/admin/events
+            - Method=GET
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                methods:
+                  - GET
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
+        - id: admin-change
+          uri: lb://main-service
+          predicates:
+            - Path=/admin/**
+        - id: private-read
+          uri: lb://main-service
+          predicates:
+            - Path=/users/{userId}/comments,/users/{userId}/events/**,/users/{userId}/requests
+            - Method=GET
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                methods:
+                  - GET
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
+        - id: private-change
+          uri: lb://main-service
+          predicates:
+            - Path=/users/{userId}/**
+        - id: public-read
+          uri: lb://main-service
+          predicates:
+            - Path=/categories/**,/comments/**,/compilations/**,/events/**
+            - Method=GET
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                methods:
+                  - GET
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
