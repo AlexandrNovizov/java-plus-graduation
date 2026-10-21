@@ -8,9 +8,9 @@ import ru.practicum.dto.compilation.LogCompilation;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.event.EventShortDto;
 
+import ru.practicum.dto.user.UserDto;
 import ru.practicum.entity.category.Category;
 import ru.practicum.entity.event.Event;
-import ru.practicum.entity.user.User;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -31,7 +31,7 @@ class CompilationMapperTest {
                 .name("Category")
                 .build();
 
-        User initiator = User.builder()
+        UserDto initiator = UserDto.builder()
                 .id(1L)
                 .name("Roman")
                 .build();
@@ -41,7 +41,7 @@ class CompilationMapperTest {
                 .title("Title")
                 .annotation("Annotation")
                 .category(category)
-                .initiator(initiator)
+                .initiatorId(initiator.getId())
                 .eventDate(LocalDateTime.now())
                 .paid(false)
                 .build();
@@ -64,8 +64,9 @@ class CompilationMapperTest {
 
         Map<Long, Long> hits = Map.of(1L, 15L);
         Map<Long, Long> requests = Map.of(1L, 7L);
+        Map<Long, String> initiatorNames = Map.of(1L, "James");
 
-        CompilationDto dto = CompilationMapper.toDto(compilation, hits, requests);
+        CompilationDto dto = CompilationMapper.toDto(compilation, hits, requests, initiatorNames);
 
         assertEquals(10L, dto.getId());
         assertEquals("Compilation", dto.getTitle());
@@ -86,6 +87,7 @@ class CompilationMapperTest {
         CompilationDto dto = CompilationMapper.toDto(
                 compilation,
                 Map.of(),
+                Map.of(),
                 Map.of()
         );
 
@@ -93,6 +95,7 @@ class CompilationMapperTest {
 
         assertEquals(0L, eventDto.getViews());
         assertEquals(0L, eventDto.getConfirmedRequests());
+        assertEquals(1L, eventDto.getInitiator().getId());
     }
 
     @Test

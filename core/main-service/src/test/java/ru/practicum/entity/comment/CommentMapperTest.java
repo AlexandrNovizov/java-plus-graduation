@@ -6,29 +6,32 @@ import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.LogComment;
 import ru.practicum.dto.comment.NewCommentDto;
 import ru.practicum.dto.comment.UserCommentAdminDto;
+import ru.practicum.dto.user.UserFullDto;
+import ru.practicum.dto.user.UserShortDto;
 import ru.practicum.entity.event.Event;
-import ru.practicum.entity.user.User;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class CommentMapperTest {
 
-    private User testUser;
+    private UserFullDto testUser;
     private Event testEvent;
     private LocalDateTime fixedTime;
+    private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @BeforeEach
     void setUp() {
         fixedTime = LocalDateTime.of(2026, 7, 2, 19, 0, 0);
 
-        testUser = new User();
+        testUser = new UserFullDto();
         testUser.setId(1L);
         testUser.setName("Иван Иванов");
         testUser.setAdminWarnings(3);
-        testUser.setBannedUntil(fixedTime);
+        testUser.setBannedUntil(fixedTime.format(formatter));
 
         testEvent = new Event();
         testEvent.setId(10L);
@@ -39,11 +42,11 @@ class CommentMapperTest {
     void toComment_whenValid_thenMapCorrectly() {
         NewCommentDto newCommentDto = new NewCommentDto("Текст тестового комментария", 10L);
 
-        Comment result = CommentMapper.toComment(newCommentDto, testUser, testEvent);
+        Comment result = CommentMapper.toComment(newCommentDto, testUser.getId(), testEvent);
 
         assertNotNull(result);
         assertEquals("Текст тестового комментария", result.getText());
-        assertEquals(testUser, result.getAuthor());
+        assertEquals(testUser.getId(), result.getAuthorId());
         assertEquals(testEvent, result.getEvent());
     }
 
@@ -52,13 +55,13 @@ class CommentMapperTest {
         Comment comment = Comment.builder()
                 .id(100L)
                 .text("Привет")
-                .author(testUser)
+                .authorId(testUser.getId())
                 .event(testEvent)
                 .created(fixedTime)
                 .updated(null) // проверяем ветку, когда обновлений не было
                 .build();
 
-        CommentDto result = CommentMapper.toCommentDto(comment);
+        CommentDto result = CommentMapper.toCommentDto(comment, testUser.getName());
 
         assertNotNull(result);
         assertEquals(100L, result.getId());
@@ -75,28 +78,15 @@ class CommentMapperTest {
         Comment comment = Comment.builder()
                 .id(100L)
                 .text("Привет")
-                .author(testUser)
+                .authorId(testUser.getId())
                 .event(testEvent)
                 .created(fixedTime)
                 .updated(fixedTime.plusHours(2)) // 2026-07-02 21:00:00
                 .build();
 
-        CommentDto result = CommentMapper.toCommentDto(comment);
+        CommentDto result = CommentMapper.toCommentDto(comment, testUser.getName());
 
         assertEquals("2026-07-02 21:00:00", result.getUpdated());
-    }
-
-    @Test
-    void toCommentDto_listMethod_thenMapList() {
-        Comment comment = Comment.builder()
-                .id(100L).text("Текст").author(testUser).event(testEvent).created(fixedTime)
-                .build();
-
-        List<CommentDto> result = CommentMapper.toCommentDto(List.of(comment));
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(100L, result.get(0).getId());
     }
 
     @Test

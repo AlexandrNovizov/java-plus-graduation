@@ -1,18 +1,20 @@
 package ru.practicum.entity.request;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.entity.event.Event;
 import ru.practicum.entity.event.EventRepository;
-import ru.practicum.entity.event.EventState;
-import ru.practicum.entity.user.User;
-import ru.practicum.entity.user.UserService;
+import ru.practicum.enums.event.EventState;
+import ru.practicum.enums.request.RequestStatus;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.UserFeignClient;
 
 import java.util.List;
 import java.util.Set;
@@ -25,7 +27,7 @@ public class RequestServiceImpl implements RequestService {
 
     private final RequestRepository requestRepository;
     private final EventRepository eventRepository;
-    private final UserService userService;
+    private final UserFeignClient userClient;
 
     @Override
     @Transactional
@@ -34,11 +36,11 @@ public class RequestServiceImpl implements RequestService {
             throw new ConflictException("Attempt to send a duplicate request.");
         }
 
-        User user = userService.findById(userId);
+        UserFullDto user = userClient.findById(userId);
         Event event = getEvent(eventId);
         checkUserRequestForEvent(event, userId);
 
-        Request request = RequestMapper.toRequest(event, user);
+        Request request = RequestMapper.toRequest(event, user.getId());
         request = requestRepository.save(request);
 
         var requestDto = RequestMapper.toRequestDto(request);
@@ -52,7 +54,7 @@ public class RequestServiceImpl implements RequestService {
     public ParticipationRequestDto cancelRequest(Long userId, Long requestId) {
         Request request = getRequest(requestId);
 
-        if (!request.getUser().getId().equals(userId)) {
+        if (!request.getRequesterId().equals(userId)) {
             throw new ConflictException("You can only cancel your own participation requests.");
         }
 
@@ -66,9 +68,9 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public List<ParticipationRequestDto> getUserRequests(Long userId) {
-        userService.checkUserExist(userId);
+        checkUserExist(userId);
 
-        return RequestMapper.toRequestDto(requestRepository.findByUserId(userId));
+        return RequestMapper.toRequestDto(requestRepository.findByRequesterId(userId));
     }
 
     @Override
@@ -92,7 +94,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     private boolean existsByUserIdAndEventId(Long userId, Long eventId) {
-        return requestRepository.existsByUserIdAndEventId(userId, eventId);
+        return requestRepository.existsByRequesterIdAndEventId(userId, eventId);
     }
 
     private Event getEvent(Long eventId) {
@@ -108,7 +110,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     private void checkUserRequestForEvent(Event event, Long userId) {
-        if (event.getInitiator().getId().equals(userId)) {
+        if (event.getInitiatorId().equals(userId)) {
             throw new ConflictException("The initiator can't request to join their own event.");
         }
         if (!event.getState().equals(EventState.PUBLISHED)) {
@@ -123,4 +125,11 @@ public class RequestServiceImpl implements RequestService {
         }
     }
 
+    private void checkUserExist(Long userId) {
+        try {
+            userClient.checkUserExists(userId);
+        } catch (FeignException.NotFound e) {
+            throw new NotFoundException("User with id: " + userId + " does not exist");
+        }
+    }
 }

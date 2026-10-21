@@ -3,11 +3,13 @@ package ru.practicum.entity.event;
 import org.junit.jupiter.api.Test;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.dto.event.Location;
+import ru.practicum.dto.user.UserDto;
+import ru.practicum.dto.user.UserShortDto;
 import ru.practicum.entity.category.Category;
-import ru.practicum.entity.user.User;
+import ru.practicum.enums.event.EventState;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,7 +18,7 @@ class EventMapperTest {
     @Test
     void toEventFullDto_shouldMapAllFields() {
         Category category = Category.builder().id(1L).name("test").build();
-        User initiator = User.builder().id(10L).name("initiator").build();
+        UserDto initiator = UserDto.builder().id(10L).name("initiator").build();
 
         Event event = Event.builder()
                 .id(1L)
@@ -32,10 +34,10 @@ class EventMapperTest {
                 .state(EventState.PUBLISHED)
                 .title("title")
                 .category(category)
-                .initiator(initiator)
+                .initiatorId(initiator.getId())
                 .build();
 
-        EventFullDto dto = EventMapper.toEventFullDto(event, 5L, 100L);
+        EventFullDto dto = EventMapper.toEventFullDto(event, 5L, 100L, initiator.getName());
 
         assertEquals(1L, dto.getId());
         assertEquals("annotation", dto.getAnnotation());
@@ -49,7 +51,7 @@ class EventMapperTest {
     @Test
     void toEventShortDto_shouldMapOnlyShortFields() {
         Category category = Category.builder().id(1L).name("test").build();
-        User initiator = User.builder().id(10L).name("initiator").build();
+        UserShortDto initiator = UserShortDto.builder().id(10L).name("initiator").build();
 
         Event event = Event.builder()
                 .id(1L)
@@ -58,10 +60,10 @@ class EventMapperTest {
                 .paid(false)
                 .title("title")
                 .category(category)
-                .initiator(initiator)
+                .initiatorId(initiator.getId())
                 .build();
 
-        EventShortDto dto = EventMapper.toEventShortDto(event, 3L, 50L);
+        EventShortDto dto = EventMapper.toEventShortDto(event, 3L, 50L, initiator.getName());
 
         assertEquals(1L, dto.getId());
         assertEquals("annotation", dto.getAnnotation());

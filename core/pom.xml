@@ -13,6 +13,8 @@
     <packaging>pom</packaging>
     <modules>
         <module>main-service</module>
+        <module>user-service</module>
+        <module>core-common</module>
     </modules>
 
     <properties>

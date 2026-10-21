@@ -4,17 +4,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.practicum.dto.event.EventRequestsCountDto;
+import ru.practicum.enums.request.RequestStatus;
 
 import java.util.List;
 import java.util.Set;
 
 public interface RequestRepository extends JpaRepository<Request, Long> {
 
-    boolean existsByUserIdAndEventId(Long userId, Long eventId);
+    boolean existsByRequesterIdAndEventId(Long requesterId, Long eventId);
 
     long countByEventIdAndStatus(Long eventId, RequestStatus status);
 
-    List<Request> findByUserId(Long userId);
+    List<Request> findByRequesterId(Long requesterId);
 
     List<Request> findByIdInAndEventId(Set<Long> ids, Long eventId);
 

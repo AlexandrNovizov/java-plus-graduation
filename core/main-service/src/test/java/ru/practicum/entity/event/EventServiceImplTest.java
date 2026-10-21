@@ -11,13 +11,16 @@ import org.springframework.data.domain.Pageable;
 import ru.practicum.StatClient;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.event.*;
+import ru.practicum.dto.user.UserFullDto;
+import ru.practicum.dto.user.UserShortDto;
 import ru.practicum.entity.category.Category;
 import ru.practicum.entity.category.CategoryService;
 import ru.practicum.entity.request.RequestService;
-import ru.practicum.entity.user.User;
-import ru.practicum.entity.user.UserService;
+import ru.practicum.enums.event.AdminStateAction;
+import ru.practicum.enums.event.EventState;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.UserFeignClient;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -26,6 +29,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,7 +41,7 @@ class EventServiceImplTest {
     @Mock
     private CategoryService categoryService;
     @Mock
-    private UserService userService;
+    private UserFeignClient userClient;
     @Mock
     private StatClient statClient;
 
@@ -57,7 +61,7 @@ class EventServiceImplTest {
                 .build();
 
         Category category = Category.builder().id(1L).name("cat").build();
-        User initiator = User.builder().id(1L).name("user").build();
+        UserShortDto initiator = UserShortDto.builder().id(1L).name("user").build();
 
         Event event = Event.builder()
                 .id(1L)
@@ -66,7 +70,7 @@ class EventServiceImplTest {
                 .eventDate(LocalDateTime.now().plusDays(1))
                 .location(new Location(1.1f,1.1f))
                 .category(category)
-                .initiator(initiator)
+                .initiatorId(initiator.getId())
                 .build();
 
         when(eventRepository.findAll(any(Predicate.class), any(Pageable.class)))
@@ -82,7 +86,7 @@ class EventServiceImplTest {
     @Test
     void updateEventByAdmin_publishEvent_shouldSetPublished() {
         Category category = Category.builder().id(1L).name("cat").build();
-        User initiator = User.builder().id(1L).name("user").build();
+        UserFullDto initiator = UserFullDto.builder().id(1L).name("user").build();
 
         Event event = Event.builder()
                 .id(1L)
@@ -91,7 +95,7 @@ class EventServiceImplTest {
                 .createdOn(LocalDateTime.now())
                 .location(new Location(1.1f,1.1f))
                 .category(category)
-                .initiator(initiator)
+                .initiatorId(initiator.getId())
                 .build();
 
         UpdateEventAdminRequest request = UpdateEventAdminRequest.builder()
@@ -100,6 +104,7 @@ class EventServiceImplTest {
 
         when(eventRepository.findWithRelationsById(1L)).thenReturn(Optional.of(event));
         when(statClient.getViewStats(any())).thenReturn(Collections.emptyList());
+        when(userClient.findById(anyLong())).thenReturn(initiator);
 
         EventFullDto result = eventService.updateEventByAdmin(1L, request);
 
@@ -110,14 +115,14 @@ class EventServiceImplTest {
     @Test
     void updateEventByAdmin_publishEvent_wrongState_shouldThrowConflict() {
         Category category = Category.builder().id(1L).name("cat").build();
-        User initiator = User.builder().id(1L).name("user").build();
+        UserShortDto initiator = UserShortDto.builder().id(1L).name("user").build();
 
         Event event = Event.builder()
                 .id(1L)
                 .state(EventState.PUBLISHED)
                 .eventDate(LocalDateTime.now().plusDays(1))
                 .category(category)
-                .initiator(initiator)
+                .initiatorId(initiator.getId())
                 .build();
 
         UpdateEventAdminRequest request = UpdateEventAdminRequest.builder()
@@ -141,7 +146,7 @@ class EventServiceImplTest {
 
     @Test
     void create_shouldReturnCreatedEvent() {
-        User user = User.builder().id(1L).name("user").build();
+        UserFullDto user = UserFullDto.builder().id(1L).name("user").build();
         CategoryDto categoryDto = CategoryDto.builder().id(1L).name("cat").build();
 
         String futureDate = LocalDateTime.now().plusDays(1)
@@ -153,10 +158,10 @@ class EventServiceImplTest {
                 .description("description")
                 .eventDate(futureDate)
                 .title("title")
-                .location(Location.builder().lat(1.0f).lon(1.0f).build())
+                .location(new LocationDto(1.0f, 1.0f))
                 .build();
 
-        when(userService.findById(1L)).thenReturn(user);
+        when(userClient.findById(1L)).thenReturn(user);
         when(categoryService.findById(1L)).thenReturn(categoryDto);
         when(eventRepository.save(any())).thenAnswer(inv -> {
             Event e = inv.getArgument(0);

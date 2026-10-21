@@ -1,0 +1,2 @@
+CREATE DATABASE ewm_stats;
+CREATE DATABASE ewm_users;

@@ -182,7 +182,7 @@ class EventPrivateControllerTest {
                 .description("Description more than twenty symbols for validation.")
                 .category(1L)
                 .eventDate(LocalDateTime.now().plusDays(2).format(formatter))
-                .location(new Location(55.75f, 37.61f))
+                .location(new LocationDto(55.75f, 37.61f))
                 .paid(false)
                 .participantLimit(0)
                 .requestModeration(true)

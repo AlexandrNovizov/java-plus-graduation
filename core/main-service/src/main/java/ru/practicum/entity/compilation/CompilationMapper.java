@@ -15,7 +15,8 @@ public class CompilationMapper {
 
     public static CompilationDto toDto(Compilation entity,
                                        Map<Long, Long> eventHits,
-                                       Map<Long, Long> eventRequestsCount) {
+                                       Map<Long, Long> eventRequestsCount,
+                                       Map<Long, String> initiatorNames) {
         return CompilationDto.builder()
                 .id(entity.getId())
                 .title(entity.getTitle())
@@ -24,7 +25,8 @@ public class CompilationMapper {
                         .map(event -> EventMapper.toEventShortDto(
                                 event,
                                 eventRequestsCount.getOrDefault(event.getId(), 0L),
-                                eventHits.getOrDefault(event.getId(), 0L)
+                                eventHits.getOrDefault(event.getId(), 0L),
+                                initiatorNames.get(event.getInitiatorId())
                         ))
                         .collect(Collectors.toSet()))
                 .build();

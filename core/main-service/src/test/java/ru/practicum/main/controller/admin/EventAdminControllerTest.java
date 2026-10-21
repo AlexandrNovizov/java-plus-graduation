@@ -10,8 +10,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.controller.admin.EventAdminController;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.UpdateEventAdminRequest;
-import ru.practicum.entity.event.AdminStateAction;
 import ru.practicum.entity.event.EventService;
+import ru.practicum.enums.event.AdminStateAction;
 
 import java.util.Collections;
 

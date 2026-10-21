@@ -3,7 +3,7 @@ package ru.practicum.entity.request;
 import org.junit.jupiter.api.Test;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.entity.event.Event;
-import ru.practicum.entity.user.User;
+import ru.practicum.enums.request.RequestStatus;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -21,15 +21,13 @@ class RequestMapperTest {
                 .requestModeration(true)
                 .build();
 
-        User user = User.builder()
-                .id(2L)
-                .build();
+        long userId = 2L;
 
-        Request request = RequestMapper.toRequest(event, user);
+        Request request = RequestMapper.toRequest(event, userId);
 
         assertNotNull(request);
         assertEquals(event, request.getEvent());
-        assertEquals(user, request.getUser());
+        assertEquals(userId, request.getRequesterId());
         assertEquals(RequestStatus.PENDING, request.getStatus());
         assertNotNull(request.getCreatedAt());
     }
@@ -41,11 +39,9 @@ class RequestMapperTest {
                 .requestModeration(false)
                 .build();
 
-        User user = User.builder()
-                .id(2L)
-                .build();
+        long userId = 2L;
 
-        Request request = RequestMapper.toRequest(event, user);
+        Request request = RequestMapper.toRequest(event, userId);
 
         assertEquals(RequestStatus.CONFIRMED, request.getStatus());
     }
@@ -56,9 +52,7 @@ class RequestMapperTest {
                 .id(10L)
                 .build();
 
-        User user = User.builder()
-                .id(20L)
-                .build();
+        long user = 20L;
 
         LocalDateTime createdAt = LocalDateTime.of(
                 2026, 1, 1, 12, 30, 45
@@ -67,7 +61,7 @@ class RequestMapperTest {
         Request request = Request.builder()
                 .id(100L)
                 .event(event)
-                .user(user)
+                .requesterId(user)
                 .createdAt(createdAt)
                 .status(RequestStatus.CONFIRMED)
                 .build();
@@ -87,14 +81,12 @@ class RequestMapperTest {
                 .id(1L)
                 .build();
 
-        User user = User.builder()
-                .id(2L)
-                .build();
+        long userId = 2L;
 
         Request request1 = Request.builder()
                 .id(10L)
                 .event(event)
-                .user(user)
+                .requesterId(userId)
                 .createdAt(LocalDateTime.now())
                 .status(RequestStatus.PENDING)
                 .build();
@@ -102,7 +94,7 @@ class RequestMapperTest {
         Request request2 = Request.builder()
                 .id(20L)
                 .event(event)
-                .user(user)
+                .requesterId(userId)
                 .createdAt(LocalDateTime.now())
                 .status(RequestStatus.CONFIRMED)
                 .build();

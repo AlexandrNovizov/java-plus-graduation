@@ -2,6 +2,7 @@ package ru.practicum.entity.request;
 
 import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.enums.request.RequestStatus;
 
 import java.util.List;
 import java.util.Set;

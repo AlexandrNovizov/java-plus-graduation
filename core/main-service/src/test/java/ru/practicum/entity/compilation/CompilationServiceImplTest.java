@@ -19,14 +19,19 @@ import ru.practicum.dto.compilation.CompilationsParamDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.compilation.UpdateCompilationRequest;
 import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.dto.event.Location;
+import ru.practicum.dto.event.LocationDto;
+import ru.practicum.dto.user.UserDto;
+import ru.practicum.dto.user.UserFullDto;
+import ru.practicum.dto.user.UserParamDto;
+import ru.practicum.dto.user.UserShortDto;
 import ru.practicum.entity.category.Category;
 import ru.practicum.entity.event.Event;
 import ru.practicum.entity.event.EventService;
-import ru.practicum.entity.event.EventState;
-import ru.practicum.entity.user.User;
+import ru.practicum.entity.event.Location;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.enums.event.EventState;
+import ru.practicum.feign.UserFeignClient;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -45,15 +50,19 @@ class CompilationServiceImplTest {
     @Mock
     private EventService eventService;
 
+    @Mock
+    private UserFeignClient userClient;
+
     @InjectMocks
     private CompilationServiceImpl compilationService;
 
     private Event event;
     private Compilation compilation;
+    private UserDto user;
 
     @BeforeEach
     void setUp() {
-        User user = User.builder()
+        user = UserDto.builder()
                 .id(1L)
                 .name("Roman")
                 .build();
@@ -68,7 +77,7 @@ class CompilationServiceImplTest {
                 .annotation("annotation")
                 .title("Event")
                 .category(category)
-                .initiator(user)
+                .initiatorId(user.getId())
                 .eventDate(LocalDateTime.of(2026, 1, 1, 12, 0))
                 .createdOn(LocalDateTime.of(2025, 1, 1, 12, 0))
                 .paid(false)
@@ -214,11 +223,7 @@ class CompilationServiceImplTest {
 
         Event event1 = Event.builder()
                 .id(1L)
-                .initiator(User.builder()
-                        .id(1L)
-                        .name("Roman")
-                        .mail("@mail.ru")
-                        .build())
+                .initiatorId(1L)
                 .category(Category.builder()
                         .id(1L)
                         .name("Category1")
@@ -227,11 +232,7 @@ class CompilationServiceImplTest {
                 .build();
         Event event2 = Event.builder()
                 .id(2L)
-                .initiator(User.builder()
-                        .id(2L)
-                        .name("Oleg")
-                        .mail("@yandex.ru")
-                        .build())
+                .initiatorId(2L)
                 .category(Category.builder()
                         .id(2L)
                         .name("Category2")
@@ -347,6 +348,8 @@ class CompilationServiceImplTest {
                 .thenReturn(Map.of());
         when(eventService.getEventsRequests(anyList()))
                 .thenReturn(Map.of());
+        when(userClient.getUsers(any(UserParamDto.class)))
+                .thenReturn(List.of());
 
         CompilationDto result = compilationService.update(1L, request);
 
@@ -360,12 +363,12 @@ class CompilationServiceImplTest {
         request.setEvents(Set.of(2L, 3L));
 
         Category category = Category.builder().id(1L).name("Category").build();
-        User user = User.builder().id(1L).name("User").build();
+        UserDto user = UserDto.builder().id(1L).name("User").build();
 
         Event event2 = Event.builder()
                 .id(2L)
                 .category(category)
-                .initiator(user)
+                .initiatorId(user.getId())
                 .annotation("a")
                 .title("t")
                 .eventDate(LocalDateTime.of(2026, 1, 1, 10, 0))
@@ -374,7 +377,7 @@ class CompilationServiceImplTest {
         Event event3 = Event.builder()
                 .id(3L)
                 .category(category)
-                .initiator(user)
+                .initiatorId(user.getId())
                 .annotation("a")
                 .title("t")
                 .eventDate(LocalDateTime.of(2026, 1, 1, 10, 0))
@@ -391,6 +394,9 @@ class CompilationServiceImplTest {
 
         when(eventService.getEventsRequests(anyList()))
                 .thenReturn(Map.of());
+
+        when(userClient.getUsers(any(UserParamDto.class)))
+                .thenReturn(List.of(user));
 
         CompilationDto result = compilationService.update(1L, request);
 

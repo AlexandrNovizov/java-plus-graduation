@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Pageable;
 import ru.practicum.dto.event.*;
 import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.enums.event.EventState;
 
 import java.util.Collection;
 import java.util.List;

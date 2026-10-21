@@ -13,14 +13,13 @@ import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.NewCommentDto;
 import ru.practicum.dto.comment.UpdateCommentDto;
 import ru.practicum.dto.comment.UserCommentAdminDto;
+import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.entity.event.Event;
 import ru.practicum.entity.event.EventService;
-import ru.practicum.entity.event.EventState;
-import ru.practicum.entity.user.CommentsRank;
-import ru.practicum.entity.user.User;
-import ru.practicum.entity.user.UserService;
+import ru.practicum.enums.event.EventState;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.UserFeignClient;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -38,7 +37,7 @@ class CommentServiceImplTest {
     @Mock
     private CommentRepository commentRepository;
     @Mock
-    private UserService userService;
+    private UserFeignClient userClient;
     @Mock
     private EventService eventService;
 
@@ -47,16 +46,18 @@ class CommentServiceImplTest {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private User testUser;
+    private UserFullDto testUser;
     private Event testEvent;
     private Comment testComment;
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
+        commentService = new CommentServiceImpl(commentRepository, userClient, eventService);
+
+        testUser = new UserFullDto();
         testUser.setId(1L);
         testUser.setCommentsCount(0);
-        testUser.setRank(CommentsRank.NOVICE);
+        testUser.setRank(CommentsRank.NOVICE.toString());
         testUser.setBannedUntil(null);
         testUser.setAdminWarnings(0);
 
@@ -67,7 +68,7 @@ class CommentServiceImplTest {
         testComment = new Comment();
         testComment.setId(20L);
         testComment.setAdminWarning(false);
-        testComment.setAuthor(testUser);
+        testComment.setAuthorId(testUser.getId());
         testComment.setEvent(testEvent);
         testComment.setCreated(LocalDateTime.now().minusDays(10));
         testComment.setUpdated(null);
@@ -78,7 +79,13 @@ class CommentServiceImplTest {
         testUser.setCommentsCount(1);
         NewCommentDto newCommentDto = new NewCommentDto("Текст", 10L);
 
-        when(userService.findById(1L)).thenReturn(testUser);
+        UserFullDto updatedUser = testUser.toBuilder()
+                .commentsCount(2)
+                .rank(CommentsRank.REGULAR.toString())
+                .build();
+
+        when(userClient.findById(1L)).thenReturn(testUser);
+        when(userClient.updateUser(testUser)).thenReturn(updatedUser);
         when(eventService.findEventByIdAndState(10L, EventState.PUBLISHED)).thenReturn(testEvent);
 
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
@@ -95,16 +102,16 @@ class CommentServiceImplTest {
         assertEquals("Текст", result.getText());
         assertEquals(2, testUser.getCommentsCount());
 
-        assertEquals(CommentsRank.REGULAR, testUser.getRank());
+        assertEquals(CommentsRank.REGULAR.toString(), testUser.getRank());
     }
 
     @Test
     void createComment_whenUserIsBanned_thenThrowsConflictException() {
         // Ставим бан в будущем времени
-        testUser.setBannedUntil(LocalDateTime.now().plusDays(1));
+        testUser.setBannedUntil(LocalDateTime.now().plusDays(1).format(FORMATTER));
         NewCommentDto newCommentDto = new NewCommentDto("Текст", 10L);
 
-        when(userService.findById(1L)).thenReturn(testUser);
+        when(userClient.findById(1L)).thenReturn(testUser);
 
         assertThrows(ConflictException.class, () -> commentService.createComment(newCommentDto, 1L));
         verify(commentRepository, Mockito.never()).save(any());
@@ -112,10 +119,12 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_whenBanExpired_thenResetsBanAndSuccess() {
-        testUser.setBannedUntil(LocalDateTime.now().minusDays(1));
+        testUser.setBannedUntil(LocalDateTime.now().minusDays(1).format(FORMATTER));
         NewCommentDto newCommentDto = new NewCommentDto("Текст", 10L);
 
-        when(userService.findById(1L)).thenReturn(testUser);
+        when(userClient.findById(1L)).thenReturn(testUser);
+        when(userClient.updateUser(Mockito.any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(eventService.findEventByIdAndState(10L, EventState.PUBLISHED)).thenReturn(testEvent);
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment c = invocation.getArgument(0);
@@ -137,7 +146,7 @@ class CommentServiceImplTest {
         existingComment.setCreated(LocalDateTime.now());
         existingComment.setUpdated(LocalDateTime.now());
         existingComment.setText("Старый текст");
-        existingComment.setAuthor(testUser);
+        existingComment.setAuthorId(testUser.getId());
         existingComment.setEvent(fakeEvent);
 
         UpdateCommentDto updateDto = new UpdateCommentDto();
@@ -146,7 +155,7 @@ class CommentServiceImplTest {
         updateDto.setText("Новый текст");
 
         when(commentRepository.findWithRelationsById(100L)).thenReturn(Optional.of(existingComment));
-        when(userService.findById(1L)).thenReturn(testUser);
+        when(userClient.findById(1L)).thenReturn(testUser);
 
         CommentDto result = commentService.updateComment(updateDto);
 
@@ -158,15 +167,15 @@ class CommentServiceImplTest {
     @Test
     void updateComment_whenNotAuthor_thenThrowsConflictException() {
         // 1. Создаем автора оригинального комментария (Юзер 1)
-        User realAuthor = new User();
+        UserFullDto realAuthor = new UserFullDto();
         realAuthor.setId(1L);
 
         Comment existingComment = new Comment();
         existingComment.setId(100L);
-        existingComment.setAuthor(realAuthor);
+        existingComment.setAuthorId(realAuthor.getId());
 
         // 2. Создаем пользователя, который ПЫТАЕТСЯ обновить (Юзер 999)
-        User hackerUser = new User();
+        UserFullDto hackerUser = new UserFullDto();
         hackerUser.setId(999L);
         hackerUser.setBannedUntil(null); // чтобы прошел banCheck
 
@@ -176,7 +185,8 @@ class CommentServiceImplTest {
         updateDto.setText("Новый текст");
 
         when(commentRepository.findWithRelationsById(100L)).thenReturn(Optional.of(existingComment));
-        when(userService.findById(999L)).thenReturn(hackerUser);
+        when(userClient.findById(999L)).thenReturn(hackerUser);
+        when(userClient.findById(1L)).thenReturn(realAuthor);
 
         assertThrows(ConflictException.class, () -> commentService.updateComment(updateDto));
     }
@@ -186,10 +196,11 @@ class CommentServiceImplTest {
         Comment existingComment = new Comment();
         existingComment.setId(100L);
         testUser.setCommentsCount(1);
-        existingComment.setAuthor(testUser);
+        existingComment.setAuthorId(testUser.getId());
 
 
         when(commentRepository.findWithRelationsById(100L)).thenReturn(Optional.of(existingComment));
+        when(userClient.findById(anyLong())).thenReturn(testUser);
 
         assertDoesNotThrow(() -> commentService.deleteComment(100L, 1L));
 
@@ -210,19 +221,20 @@ class CommentServiceImplTest {
 
         Comment c1 = new Comment();
         c1.setId(100L);
-        c1.setAuthor(testUser);
+        c1.setAuthorId(testUser.getId());
         c1.setEvent(fakeEvent);
         c1.setText("Текст 1");
         c1.setCreated(LocalDateTime.now());
 
         Comment c2 = new Comment();
         c2.setId(101L);
-        c2.setAuthor(testUser);
+        c2.setAuthorId(testUser.getId());
         c2.setEvent(fakeEvent);
         c2.setText("Текст 2");
         c2.setCreated(LocalDateTime.now());
 
         when(commentRepository.findAllByAuthorId(1L)).thenReturn(List.of(c1, c2));
+        when(userClient.findById(anyLong())).thenReturn(testUser);
 
         List<CommentDto> result = commentService.getComments(1L);
 
@@ -235,6 +247,10 @@ class CommentServiceImplTest {
     @Test
     void incrementWarning_whenUserNotExceededWarningsLimitAndCommentNotReceivedWarning_Count_thenIncreaseWarningsCount() {
         when(commentRepository.findWithRelationsById(20L)).thenReturn(Optional.of(testComment));
+        when(userClient.findById(anyLong())).thenReturn(testUser);
+        when(userClient.updateUser(any(UserFullDto.class))).thenAnswer(invocation ->
+            invocation.getArgument(0)
+        );
 
         UserCommentAdminDto result = commentService.giveWarning(testComment.getId());
 
@@ -250,6 +266,7 @@ class CommentServiceImplTest {
 
         testComment.setAdminWarning(true);
         when(commentRepository.findWithRelationsById(20L)).thenReturn(Optional.of(testComment));
+        when(userClient.findById(anyLong())).thenReturn(testUser);
 
         ConflictException exception = assertThrows(ConflictException.class,
                 () -> commentService.giveWarning(testComment.getId()));
@@ -262,6 +279,10 @@ class CommentServiceImplTest {
         LocalDateTime expectedBanDate = LocalDateTime.now().plusMonths(6);
         testUser.setAdminWarnings(2);
         when(commentRepository.findWithRelationsById(20L)).thenReturn(Optional.of(testComment));
+        when(userClient.findById(anyLong())).thenReturn(testUser);
+        when(userClient.updateUser(testUser)).thenAnswer(invocation ->
+                invocation.getArgument(0)
+        );
 
         UserCommentAdminDto result = commentService.giveWarning(testComment.getId());
 
@@ -276,8 +297,9 @@ class CommentServiceImplTest {
     void incrementWarning_Count_whenUserExceededWarningsLimitAndUserAlreadyBanned_thenThrowConflictException() {
         String expectedMessage = "You have been banned!";
         testUser.setAdminWarnings(2);
-        testUser.setBannedUntil(LocalDateTime.now().plusMonths(3));
+        testUser.setBannedUntil(LocalDateTime.now().plusMonths(3).format(FORMATTER));
         when(commentRepository.findWithRelationsById(20L)).thenReturn(Optional.of(testComment));
+        when(userClient.findById(anyLong())).thenReturn(testUser);
 
         ConflictException exception = assertThrows(ConflictException.class,
                 () -> commentService.giveWarning(testComment.getId()));
@@ -288,6 +310,7 @@ class CommentServiceImplTest {
     @Test
     void adminDelete_whenValid_thenCallsDelete() {
         when(commentRepository.findWithRelationsById(testComment.getId())).thenReturn(Optional.of(testComment));
+        when(userClient.findById(anyLong())).thenReturn(testUser);
 
         assertDoesNotThrow(() -> commentService.adminDelete(testComment.getId()));
 
@@ -330,6 +353,7 @@ class CommentServiceImplTest {
     void getComment_WhenCommentExists_ThenReturnDto() {
         Long commentId = testComment.getId();
         when(commentRepository.findWithRelationsById(commentId)).thenReturn(Optional.of(testComment));
+        when(userClient.findById(anyLong())).thenReturn(testUser);
 
         CommentDto result = commentService.getComment(commentId);
 
