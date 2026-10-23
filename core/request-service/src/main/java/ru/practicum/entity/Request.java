@@ -1,8 +1,7 @@
-package ru.practicum.entity.request;
+package ru.practicum.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import ru.practicum.entity.event.Event;
 import ru.practicum.enums.request.RequestStatus;
 
 import java.time.LocalDateTime;
@@ -21,10 +20,10 @@ public class Request {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id", nullable = false)
-    private Event event;
+    @Column(nullable = false)
+    private Long eventId;
 
+    @Column(nullable = false)
     private Long requesterId;
 
     @Enumerated(EnumType.STRING)

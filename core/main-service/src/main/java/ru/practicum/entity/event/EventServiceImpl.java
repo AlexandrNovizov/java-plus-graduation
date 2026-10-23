@@ -11,10 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.EndpointHit;
-import ru.practicum.StatClient;
-import ru.practicum.StatsRequest;
-import ru.practicum.ViewStats;
+import ru.practicum.*;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.event.*;
 import ru.practicum.dto.request.ParticipationRequestDto;
@@ -25,9 +22,6 @@ import ru.practicum.dto.util.UserUtil;
 import ru.practicum.entity.category.Category;
 import ru.practicum.entity.category.CategoryMapper;
 import ru.practicum.entity.category.CategoryService;
-import ru.practicum.entity.request.Request;
-import ru.practicum.entity.request.RequestMapper;
-import ru.practicum.entity.request.RequestService;
 import ru.practicum.enums.event.AdminStateAction;
 import ru.practicum.enums.event.EventState;
 import ru.practicum.enums.event.SortBy;
@@ -36,6 +30,7 @@ import ru.practicum.enums.request.RequestStatus;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
+import ru.practicum.feign.RequestFeignClient;
 import ru.practicum.feign.UserFeignClient;
 
 import java.time.LocalDateTime;
@@ -54,7 +49,7 @@ public class EventServiceImpl implements EventService {
     private final StatClient statClient;
     private final EventRepository eventRepository;
     private final CategoryService categoryService;
-    private final RequestService requestService;
+    private final RequestFeignClient requestClient;
     private final UserFeignClient userClient;
 
     private static final String APP_NAME = "ewm-main-service";
@@ -141,7 +136,7 @@ public class EventServiceImpl implements EventService {
         Event event = getEvent(eventId);
         checkUserIsEventInitiator(userId, event);
 
-        return requestService.getParticipationRequestsByEventId(eventId);
+        return requestClient.getParticipationRequestsByEventId(eventId);
     }
 
     @Override
@@ -154,7 +149,7 @@ public class EventServiceImpl implements EventService {
         checkUserExist(userId);
         checkUserIsEventInitiator(userId, event);
 
-        List<Request> requests = requestService.findByIdsAndEventId(request.getRequestIds(), event.getId());
+        List<ParticipationRequestDto> requests = requestClient.findByIdsAndEventId(request.getRequestIds(), event.getId());
 
 
         long confirmedRequests = getEventRequestsCount(event.getId());
@@ -173,35 +168,40 @@ public class EventServiceImpl implements EventService {
             }
         }
 
-        List<Request> confirmed = new ArrayList<>();
-        List<Request> rejected = new ArrayList<>();
+        List<ParticipationRequestDto> confirmed = new ArrayList<>();
+        List<ParticipationRequestDto> rejected = new ArrayList<>();
 
-        for (Request req : requests) {
-            if (req.getStatus() != RequestStatus.PENDING) {
+        for (ParticipationRequestDto req : requests) {
+            if (!req.getStatus().equals(RequestStatus.PENDING.toString())) {
                 throw new ConflictException(String.format("Request must have status PENDING. " +
                         "Request with id=" + req.getId() + " has status " + req.getStatus()));
             }
 
             if (targetStatus == RequestStatus.REJECTED) {
-                req.setStatus(RequestStatus.REJECTED);
+                req.setStatus(RequestStatus.REJECTED.toString());
                 rejected.add(req);
                 continue;
             }
 
             if (remainedRequests <= 0L) {
-                req.setStatus(RequestStatus.REJECTED);
+                req.setStatus(RequestStatus.REJECTED.toString());
                 rejected.add(req);
                 continue;
             }
-            req.setStatus(RequestStatus.CONFIRMED);
+            req.setStatus(RequestStatus.CONFIRMED.toString());
             confirmed.add(req);
             remainedRequests--;
         }
 
-        List<ParticipationRequestDto> confirmedDto = RequestMapper.toRequestDto(confirmed);
-        List<ParticipationRequestDto> rejectedDto = RequestMapper.toRequestDto(rejected);
+        if (!confirmed.isEmpty()) {
+            confirmed = requestClient.updateRequestsStatus(makeIdsSet(confirmed), RequestStatus.CONFIRMED);
+        }
+        if (!rejected.isEmpty()) {
+            rejected = requestClient.updateRequestsStatus(makeIdsSet(rejected), RequestStatus.REJECTED);
+        }
 
-        var result = new EventRequestStatusUpdateResult(confirmedDto, rejectedDto);
+
+        var result = new EventRequestStatusUpdateResult(confirmed, rejected);
         log.info("Обновлены статусы заявок на событие: {}", result);
 
         return result;
@@ -364,7 +364,8 @@ public class EventServiceImpl implements EventService {
 
         Map<Long, Long> viewsMap = getViewsMap(Collections.singletonList(event));
         Long views = viewsMap.getOrDefault(event.getId(), 0L);
-        long confirmedRequests = requestService.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED);
+        EventRequestsCountDto countDto = requestClient.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED);
+        long confirmedRequests = countDto.count();
 
         return EventMapper.toEventFullDto(event, confirmedRequests, views, initiator.getName());
     }
@@ -372,7 +373,7 @@ public class EventServiceImpl implements EventService {
     @Override
     public Map<Long, Long> getEventsRequests(List<Event> events) {
         Set<Long> eventIds = events.stream().map(Event::getId).collect(Collectors.toSet());
-        List<EventRequestsCountDto> requests = requestService.countByEventIdsAndStatus(eventIds, RequestStatus.CONFIRMED);
+        List<EventRequestsCountDto> requests = requestClient.countByEventIdsAndStatus(eventIds, RequestStatus.CONFIRMED);
 
         return requests.stream()
                 .collect(Collectors.toMap(EventRequestsCountDto::eventId, EventRequestsCountDto::count));
@@ -415,6 +416,22 @@ public class EventServiceImpl implements EventService {
     public boolean isEventExists(Long eventId) {
         return eventRepository.existsById(eventId);
     }
+
+    // ---------- Feign client ----------
+
+    @Override
+    public EventFullDto getByEventId(Long eventId) {
+        Event event = getEvent(eventId);
+        UserFullDto initiator = userClient.findById(event.getInitiatorId());
+
+        Map<Long, Long> viewsMap = getViewsMap(Collections.singletonList(event));
+        Long views = viewsMap.getOrDefault(event.getId(), 0L);
+        EventRequestsCountDto countDto = requestClient.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED);
+        long confirmedRequests = countDto.count();
+
+        return EventMapper.toEventFullDto(event, confirmedRequests, views, initiator.getName());
+    }
+
 
     // ---------- QueryDSL predicates ----------
 
@@ -566,7 +583,8 @@ public class EventServiceImpl implements EventService {
     }
 
     private long getEventRequestsCount(Long eventId) {
-        return requestService.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+        EventRequestsCountDto countDto = requestClient.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+        return countDto.count();
     }
 
     private void checkUserExist(Long userId) {
@@ -575,5 +593,11 @@ public class EventServiceImpl implements EventService {
         } catch (FeignException.NotFound e) {
             throw new NotFoundException("User with id: " + userId + " does not exist");
         }
+    }
+
+    private Set<Long> makeIdsSet(Collection<ParticipationRequestDto> dtos) {
+        return dtos.stream()
+                .map(ParticipationRequestDto::getId)
+                .collect(Collectors.toSet());
     }
 }

@@ -1,4 +1,4 @@
-package ru.practicum.entity.request;
+package ru.practicum.entity;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -7,13 +7,19 @@ import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.enums.request.RequestStatus;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface RequestRepository extends JpaRepository<Request, Long> {
 
     boolean existsByRequesterIdAndEventId(Long requesterId, Long eventId);
 
-    long countByEventIdAndStatus(Long eventId, RequestStatus status);
+    @Query("SELECT new ru.practicum.dto.event.EventRequestsCountDto(r.eventId, COUNT(r.id)) " +
+            "FROM Request r " +
+            "WHERE r.eventId = :eventId AND r.status = :status " +
+            "GROUP BY r.eventId")
+    Optional<EventRequestsCountDto> countByEventIdAndStatus(@Param("eventId") Long eventId,
+                                                            @Param("status") RequestStatus status);
 
     List<Request> findByRequesterId(Long requesterId);
 
@@ -22,10 +28,10 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
     List<Request> findByEventId(Long eventId);
 
 
-    @Query("SELECT new ru.practicum.dto.event.EventRequestsCountDto(r.event.id, COUNT(r.id)) " +
+    @Query("SELECT new ru.practicum.dto.event.EventRequestsCountDto(r.eventId, COUNT(r.id)) " +
             "FROM Request r " +
-            "WHERE r.event.id IN :ids AND r.status = :status " +
-            "GROUP BY r.event.id")
+            "WHERE r.eventId IN :ids AND r.status = :status " +
+            "GROUP BY r.eventId")
     List<EventRequestsCountDto> countByEventIdInAndStatus(@Param("ids") Set<Long> ids,
                                                           @Param("status") RequestStatus status);
 }

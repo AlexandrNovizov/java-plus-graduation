@@ -1,8 +1,8 @@
-package ru.practicum.entity.request;
+package ru.practicum.entity;
 
 import org.junit.jupiter.api.Test;
+import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.entity.event.Event;
 import ru.practicum.enums.request.RequestStatus;
 
 import java.time.LocalDateTime;
@@ -15,7 +15,7 @@ class RequestMapperTest {
 
     @Test
     void toRequest_shouldCreatePendingRequest_whenModerationEnabled() {
-        Event event = Event.builder()
+        EventFullDto event = EventFullDto.builder()
                 .id(1L)
                 .participantLimit(5)
                 .requestModeration(true)
@@ -26,7 +26,7 @@ class RequestMapperTest {
         Request request = RequestMapper.toRequest(event, userId);
 
         assertNotNull(request);
-        assertEquals(event, request.getEvent());
+        assertEquals(event.getId(), request.getEventId());
         assertEquals(userId, request.getRequesterId());
         assertEquals(RequestStatus.PENDING, request.getStatus());
         assertNotNull(request.getCreatedAt());
@@ -34,7 +34,7 @@ class RequestMapperTest {
 
     @Test
     void toRequest_shouldCreateConfirmedRequest_whenModerationDisabled() {
-        Event event = Event.builder()
+        EventFullDto event = EventFullDto.builder()
                 .id(1L)
                 .requestModeration(false)
                 .build();
@@ -48,7 +48,7 @@ class RequestMapperTest {
 
     @Test
     void toRequestDto_shouldMapRequestToDto() {
-        Event event = Event.builder()
+        EventFullDto event = EventFullDto.builder()
                 .id(10L)
                 .build();
 
@@ -60,7 +60,7 @@ class RequestMapperTest {
 
         Request request = Request.builder()
                 .id(100L)
-                .event(event)
+                .eventId(event.getId())
                 .requesterId(user)
                 .createdAt(createdAt)
                 .status(RequestStatus.CONFIRMED)
@@ -77,7 +77,7 @@ class RequestMapperTest {
 
     @Test
     void toRequestDtos_shouldMapList() {
-        Event event = Event.builder()
+        EventFullDto event = EventFullDto.builder()
                 .id(1L)
                 .build();
 
@@ -85,7 +85,7 @@ class RequestMapperTest {
 
         Request request1 = Request.builder()
                 .id(10L)
-                .event(event)
+                .eventId(event.getId())
                 .requesterId(userId)
                 .createdAt(LocalDateTime.now())
                 .status(RequestStatus.PENDING)
@@ -93,7 +93,7 @@ class RequestMapperTest {
 
         Request request2 = Request.builder()
                 .id(20L)
-                .event(event)
+                .eventId(event.getId())
                 .requesterId(userId)
                 .createdAt(LocalDateTime.now())
                 .status(RequestStatus.CONFIRMED)

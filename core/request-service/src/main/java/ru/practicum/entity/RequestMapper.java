@@ -1,8 +1,8 @@
-package ru.practicum.entity.request;
+package ru.practicum.entity;
 
 import lombok.experimental.UtilityClass;
+import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.entity.event.Event;
 import ru.practicum.enums.request.RequestStatus;
 
 import java.time.LocalDateTime;
@@ -14,9 +14,9 @@ public class RequestMapper {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static Request toRequest(Event event, Long requesterId) {
+    public static Request toRequest(EventFullDto event, Long requesterId) {
         return Request.builder()
-                .event(event)
+                .eventId(event.getId())
                 .requesterId(requesterId)
                 .createdAt(LocalDateTime.now())
                 .status(isStatusConfirmed(event) ? RequestStatus.CONFIRMED : RequestStatus.PENDING)
@@ -27,7 +27,7 @@ public class RequestMapper {
         return ParticipationRequestDto.builder()
                 .id(request.getId())
                 .created(request.getCreatedAt().format(formatter))
-                .eventId(request.getEvent().getId())
+                .eventId(request.getEventId())
                 .requesterId(request.getRequesterId())
                 .status(request.getStatus().name())
                 .build();
@@ -39,7 +39,7 @@ public class RequestMapper {
                 .toList();
     }
 
-    private boolean isStatusConfirmed(Event event) {
+    private boolean isStatusConfirmed(EventFullDto event) {
         return !event.getRequestModeration() || event.getParticipantLimit() == 0;
     }
 }

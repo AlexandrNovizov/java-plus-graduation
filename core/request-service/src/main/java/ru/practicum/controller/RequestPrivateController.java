@@ -1,4 +1,4 @@
-package ru.practicum.controller.private_api;
+package ru.practicum.controller;
 
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.entity.request.RequestService;
+import ru.practicum.entity.RequestService;
 
 import java.util.List;
 

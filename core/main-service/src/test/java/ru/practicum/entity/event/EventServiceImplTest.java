@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import ru.practicum.feign.RequestFeignClient;
 import ru.practicum.StatClient;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.event.*;
@@ -15,9 +16,9 @@ import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.dto.user.UserShortDto;
 import ru.practicum.entity.category.Category;
 import ru.practicum.entity.category.CategoryService;
-import ru.practicum.entity.request.RequestService;
 import ru.practicum.enums.event.AdminStateAction;
 import ru.practicum.enums.event.EventState;
+import ru.practicum.enums.request.RequestStatus;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.feign.UserFeignClient;
@@ -46,7 +47,7 @@ class EventServiceImplTest {
     private StatClient statClient;
 
     @Mock
-    private RequestService requestService;
+    private RequestFeignClient requestClient;
 
     @InjectMocks
     private EventServiceImpl eventService;
@@ -102,9 +103,13 @@ class EventServiceImplTest {
                 .stateAction(AdminStateAction.PUBLISH_EVENT)
                 .build();
 
+
+
         when(eventRepository.findWithRelationsById(1L)).thenReturn(Optional.of(event));
         when(statClient.getViewStats(any())).thenReturn(Collections.emptyList());
         when(userClient.findById(anyLong())).thenReturn(initiator);
+        when(requestClient.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED))
+                .thenReturn(new EventRequestsCountDto(event.getId(), 1L));
 
         EventFullDto result = eventService.updateEventByAdmin(1L, request);
 

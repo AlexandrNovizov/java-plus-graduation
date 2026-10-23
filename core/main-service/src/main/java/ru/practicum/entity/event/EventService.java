@@ -43,4 +43,7 @@ public interface EventService {
     Event findEventByIdAndState(Long id, EventState state);
 
     boolean isEventExists(Long eventId);
+
+    // Feign
+    EventFullDto getByEventId(Long eventId);
 }

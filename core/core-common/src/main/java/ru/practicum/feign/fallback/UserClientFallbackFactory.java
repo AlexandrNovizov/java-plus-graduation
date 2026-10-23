@@ -4,7 +4,7 @@ import org.springframework.cloud.openfeign.FallbackFactory;
 import ru.practicum.dto.user.UserDto;
 import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.dto.user.UserParamDto;
-import ru.practicum.feign.UserServiceUnavailableException;
+import ru.practicum.feign.exception.UserServiceUnavailableException;
 import ru.practicum.feign.UserFeignClient;
 
 import java.util.List;

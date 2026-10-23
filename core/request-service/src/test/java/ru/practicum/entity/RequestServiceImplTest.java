@@ -1,20 +1,21 @@
-package ru.practicum.entity.request;
+package ru.practicum.entity;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.dto.user.UserShortDto;
-import ru.practicum.entity.event.Event;
-import ru.practicum.entity.event.EventRepository;
 import ru.practicum.enums.event.EventState;
 import ru.practicum.enums.request.RequestStatus;
+import ru.practicum.feign.EventFeignClient;
+import ru.practicum.feign.UserFeignClient;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.feign.UserFeignClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,7 +32,7 @@ class RequestServiceImplTest {
     private RequestRepository requestRepository;
 
     @Mock
-    private EventRepository eventRepository;
+    private EventFeignClient eventClient;
 
     @Mock
     private UserFeignClient userClient;
@@ -46,12 +47,12 @@ class RequestServiceImplTest {
 
         UserFullDto user = UserFullDto.builder().id(userId).build();
 
-        UserFullDto initiator = UserFullDto.builder().id(99L).build();
+        UserShortDto initiator = UserShortDto.builder().id(99L).build();
 
-        Event event = Event.builder()
+        EventFullDto event = EventFullDto.builder()
                 .id(eventId)
-                .initiatorId(initiator.getId())
-                .state(EventState.PUBLISHED)
+                .initiator(initiator)
+                .state(EventState.PUBLISHED.toString())
                 .participantLimit(0)
                 .requestModeration(true)
                 .build();
@@ -59,7 +60,7 @@ class RequestServiceImplTest {
         Request savedRequest = Request.builder()
                 .id(10L)
                 .requesterId(user.getId())
-                .event(event)
+                .eventId(event.getId())
                 .createdAt(LocalDateTime.now())
                 .status(RequestStatus.PENDING)
                 .build();
@@ -67,7 +68,7 @@ class RequestServiceImplTest {
         when(requestRepository.existsByRequesterIdAndEventId(userId, eventId))
                 .thenReturn(false);
         when(userClient.findById(userId)).thenReturn(user);
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventClient.findById(eventId)).thenReturn(event);
         when(requestRepository.save(any(Request.class))).thenReturn(savedRequest);
 
         ParticipationRequestDto result =
@@ -88,7 +89,7 @@ class RequestServiceImplTest {
                 () -> requestService.saveRequest(1L, 2L)
         );
 
-        verifyNoMoreInteractions(eventRepository);
+        verifyNoMoreInteractions(eventClient);
     }
 
     @Test
@@ -99,8 +100,8 @@ class RequestServiceImplTest {
         when(userClient.findById(1L))
                 .thenReturn(UserFullDto.builder().id(1L).build());
 
-        when(eventRepository.findById(2L))
-                .thenReturn(Optional.empty());
+        when(eventClient.findById(2L))
+                .thenThrow(new NotFoundException("Event with id " + 2L + " not found"));
 
         assertThrows(
                 NotFoundException.class,
@@ -112,17 +113,17 @@ class RequestServiceImplTest {
     void saveRequest_shouldThrowConflict_whenUserIsInitiator() {
         UserFullDto user = UserFullDto.builder().id(1L).build();
 
-        Event event = Event.builder()
+        EventFullDto event = EventFullDto.builder()
                 .id(2L)
-                .initiatorId(user.getId())
-                .state(EventState.PUBLISHED)
+                .initiator(makeShort(user))
+                .state(EventState.PUBLISHED.toString())
                 .build();
 
         when(requestRepository.existsByRequesterIdAndEventId(1L, 2L))
                 .thenReturn(false);
         when(userClient.findById(1L)).thenReturn(user);
-        when(eventRepository.findById(2L))
-                .thenReturn(Optional.of(event));
+        when(eventClient.findById(2L))
+                .thenReturn(event);
 
         assertThrows(
                 ConflictException.class,
@@ -134,17 +135,17 @@ class RequestServiceImplTest {
     void saveRequest_shouldThrowConflict_whenEventNotPublished() {
         UserFullDto user = UserFullDto.builder().id(1L).build();
 
-        Event event = Event.builder()
+        EventFullDto event = EventFullDto.builder()
                 .id(2L)
-                .initiatorId(99L)
-                .state(EventState.CANCELED)
+                .initiator(new UserShortDto(99L, "initiator"))
+                .state(EventState.CANCELED.toString())
                 .build();
 
         when(requestRepository.existsByRequesterIdAndEventId(1L, 2L))
                 .thenReturn(false);
         when(userClient.findById(1L)).thenReturn(user);
-        when(eventRepository.findById(2L))
-                .thenReturn(Optional.of(event));
+        when(eventClient.findById(2L))
+                .thenReturn(event);
 
         assertThrows(
                 ConflictException.class,
@@ -156,10 +157,10 @@ class RequestServiceImplTest {
     void saveRequest_shouldThrowConflict_whenParticipantLimitReached() {
         UserFullDto user = UserFullDto.builder().id(1L).build();
 
-        Event event = Event.builder()
+        EventFullDto event = EventFullDto.builder()
                 .id(2L)
-                .initiatorId(99L)
-                .state(EventState.PUBLISHED)
+                .initiator(new UserShortDto(99L, "initiator"))
+                .state(EventState.PUBLISHED.toString())
                 .participantLimit(5)
                 .build();
 
@@ -169,13 +170,13 @@ class RequestServiceImplTest {
         when(userClient.findById(1L))
                 .thenReturn(user);
 
-        when(eventRepository.findById(2L))
-                .thenReturn(Optional.of(event));
+        when(eventClient.findById(2L))
+                .thenReturn(event);
 
         when(requestRepository.countByEventIdAndStatus(
                 2L,
                 RequestStatus.CONFIRMED))
-                .thenReturn(5L);
+                .thenReturn(Optional.of(new EventRequestsCountDto(2L, 5L)));
 
         assertThrows(
                 ConflictException.class,
@@ -191,7 +192,7 @@ class RequestServiceImplTest {
                 .id(10L)
                 .requesterId(user.getId())
                 .status(RequestStatus.CONFIRMED)
-                .event(Event.builder().id(2L).build())
+                .eventId(2L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -228,7 +229,7 @@ class RequestServiceImplTest {
         Request request = Request.builder()
                 .id(1L)
                 .requesterId(1L)
-                .event(Event.builder().id(2L).build())
+                .eventId(2L)
                 .createdAt(LocalDateTime.now())
                 .status(RequestStatus.CONFIRMED)
                 .build();
@@ -242,5 +243,12 @@ class RequestServiceImplTest {
         assertEquals(1, result.size());
 
         verify(userClient).checkUserExists(1L);
+    }
+
+    private UserShortDto makeShort(UserFullDto dto) {
+        return UserShortDto.builder()
+                .id(dto.getId())
+                .name(dto.getName())
+                .build();
     }
 }

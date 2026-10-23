@@ -14,6 +14,28 @@ spring:
         locator:
           enabled: false
       routes:
+        - id: requests-read
+          uri: lb://request-service
+          predicates:
+            - Method=GET
+            - Path=/users/{userId}/requests/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                methods:
+                  - GET
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
+        - id: requests-change
+          uri: lb://request-service
+          predicates:
+            Path=/users/{userId}/requests/**
         - id: users-read
           uri: lb://user-service
           predicates:
@@ -61,7 +83,7 @@ spring:
         - id: private-read
           uri: lb://main-service
           predicates:
-            - Path=/users/{userId}/comments,/users/{userId}/events/**,/users/{userId}/requests
+            - Path=/users/{userId}/comments,/users/{userId}/events/**
             - Method=GET
           filters:
             - name: Retry
