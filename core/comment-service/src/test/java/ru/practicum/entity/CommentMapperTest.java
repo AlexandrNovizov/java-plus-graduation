@@ -1,4 +1,4 @@
-package ru.practicum.entity.comment;
+package ru.practicum.entity;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

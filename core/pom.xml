@@ -17,6 +17,7 @@
         <module>core-common</module>
         <module>request-service</module>
         <module>event-service</module>
+        <module>comment-service</module>
     </modules>
 
     <properties>

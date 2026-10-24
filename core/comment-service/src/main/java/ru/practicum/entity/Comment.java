@@ -1,4 +1,4 @@
-package ru.practicum.entity.comment;
+package ru.practicum.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

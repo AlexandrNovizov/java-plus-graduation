@@ -1,4 +1,4 @@
-package ru.practicum.entity.comment;
+package ru.practicum.entity;
 
 import lombok.experimental.UtilityClass;
 import ru.practicum.dto.comment.CommentDto;

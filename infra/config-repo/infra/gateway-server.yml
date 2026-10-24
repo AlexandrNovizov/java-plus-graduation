@@ -14,6 +14,29 @@ spring:
         locator:
           enabled: false
       routes:
+        - id: comments-read
+          uri: lb://comment-service
+          predicates:
+            - Method=GET
+            - Path=/comments/**,/users/{userId}/comments/**,/admin/comments/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                methods:
+                  - GET
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
+        - id: comments-change
+          uri: lb://comment-service
+          predicates:
+            - Path=/comments/**,/users/{userId}/comments/**,/admin/comments/**
+
         - id: events-read
           uri: lb://event-service
           predicates:
@@ -88,24 +111,6 @@ spring:
           predicates:
             - Path=/admin/**
 
-        - id: private-read
-          uri: lb://main-service
-          predicates:
-            - Path=/users/{userId}/comments
-            - Method=GET
-          filters:
-            - name: Retry
-              args:
-                retries: 3
-                statuses:
-                  - BAD_GATEWAY
-                  - SERVICE_UNAVAILABLE
-                  - GATEWAY_TIMEOUT
-                methods:
-                  - GET
-                backoff:
-                  firstBackoff: 100ms
-                  maxBackoff: 500ms
         - id: private-change
           uri: lb://main-service
           predicates:
@@ -113,7 +118,7 @@ spring:
         - id: public-read
           uri: lb://main-service
           predicates:
-            - Path=/categories/**,/comments/**,/compilations/**
+            - Path=/categories/**,/compilations/**
             - Method=GET
           filters:
             - name: Retry

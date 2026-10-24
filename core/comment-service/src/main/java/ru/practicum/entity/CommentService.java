@@ -1,4 +1,4 @@
-package ru.practicum.entity.comment;
+package ru.practicum.entity;
 
 import org.springframework.data.domain.Pageable;
 import ru.practicum.dto.comment.CommentDto;

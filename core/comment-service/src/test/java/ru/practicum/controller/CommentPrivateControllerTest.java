@@ -1,4 +1,4 @@
-package ru.practicum.main.controller.private_api;
+package ru.practicum.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -8,11 +8,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.controller.private_api.CommentPrivateController;
 import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.NewCommentDto;
 import ru.practicum.dto.comment.UpdateCommentDto;
-import ru.practicum.entity.comment.CommentService;
+import ru.practicum.entity.CommentService;
 
 import java.util.List;
 

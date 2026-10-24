@@ -1,5 +1,6 @@
-package ru.practicum.entity.comment;
+package ru.practicum.entity;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +15,6 @@ import ru.practicum.dto.comment.NewCommentDto;
 import ru.practicum.dto.comment.UpdateCommentDto;
 import ru.practicum.dto.comment.UserCommentAdminDto;
 import ru.practicum.dto.event.EventFullDto;
-import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.enums.comment.CommentsRank;
 import ru.practicum.enums.event.EventState;
@@ -134,7 +134,7 @@ class CommentServiceImplTest {
             return c;
         });
 
-        assertDoesNotThrow(() -> commentService.createComment(newCommentDto, 1L));
+        Assertions.assertDoesNotThrow(() -> commentService.createComment(newCommentDto, 1L));
         assertNull(testUser.getBannedUntil());
     }
 
@@ -272,7 +272,7 @@ class CommentServiceImplTest {
         ConflictException exception = assertThrows(ConflictException.class,
                 () -> commentService.giveWarning(testComment.getId()));
 
-        assertEquals(expectedMessage, exception.getMessage());
+        Assertions.assertEquals(expectedMessage, exception.getMessage());
     }
 
     @Test
@@ -305,7 +305,7 @@ class CommentServiceImplTest {
         ConflictException exception = assertThrows(ConflictException.class,
                 () -> commentService.giveWarning(testComment.getId()));
 
-        assertEquals(expectedMessage, exception.getMessage());
+        Assertions.assertEquals(expectedMessage, exception.getMessage());
     }
 
     @Test
