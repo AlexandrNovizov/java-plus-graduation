@@ -2,7 +2,6 @@ package ru.practicum.entity.compilation;
 
 import jakarta.persistence.*;
 import lombok.*;
-import ru.practicum.entity.event.Event;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,12 +27,14 @@ public class Compilation {
     @Builder.Default
     private Boolean pinned = false;
 
-    @ManyToMany
-    @JoinTable(name = "compilation_events",
-            joinColumns = @JoinColumn(name = "compilation_id"),
-            inverseJoinColumns = @JoinColumn(name = "event_id"))
+    @ElementCollection
+    @CollectionTable(
+            name = "compilation_events",
+            joinColumns = @JoinColumn(name = "compilation_id")
+    )
+    @Column(name = "event_id")
     @Builder.Default
-    Set<Event> events = new HashSet<>();
+    Set<Long> eventIds = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {

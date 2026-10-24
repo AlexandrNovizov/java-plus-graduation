@@ -3,16 +3,14 @@ package ru.practicum.entity.compilation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.LogCompilation;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.event.EventShortDto;
-
-import ru.practicum.dto.user.UserDto;
-import ru.practicum.entity.category.Category;
-import ru.practicum.entity.event.Event;
-
+import ru.practicum.dto.user.UserShortDto;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 
@@ -21,36 +19,39 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CompilationMapperTest {
 
-    private Event event;
+    private EventShortDto event;
     private Compilation compilation;
+    private final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @BeforeEach
     void setUp() {
-        Category category = Category.builder()
+        CategoryDto category = CategoryDto.builder()
                 .id(1L)
                 .name("Category")
                 .build();
 
-        UserDto initiator = UserDto.builder()
+        UserShortDto initiator = UserShortDto.builder()
                 .id(1L)
                 .name("Roman")
                 .build();
 
-        event = Event.builder()
+        event = EventShortDto.builder()
                 .id(1L)
                 .title("Title")
                 .annotation("Annotation")
                 .category(category)
-                .initiatorId(initiator.getId())
-                .eventDate(LocalDateTime.now())
+                .initiator(initiator)
+                .eventDate(LocalDateTime.now().format(FORMATTER))
                 .paid(false)
+                .views(15L)
+                .confirmedRequests(7L)
                 .build();
 
         compilation = new Compilation();
         compilation.setId(10L);
         compilation.setTitle("Compilation");
         compilation.setPinned(true);
-        compilation.setEvents(Set.of(event));
+        compilation.setEventIds(Set.of(event.getId()));
     }
 
     @Test
@@ -60,13 +61,9 @@ class CompilationMapperTest {
         compilation.setId(10L);
         compilation.setTitle("Compilation");
         compilation.setPinned(true);
-        compilation.setEvents(Set.of(event));
+        compilation.setEventIds(Set.of(event.getId()));
 
-        Map<Long, Long> hits = Map.of(1L, 15L);
-        Map<Long, Long> requests = Map.of(1L, 7L);
-        Map<Long, String> initiatorNames = Map.of(1L, "James");
-
-        CompilationDto dto = CompilationMapper.toDto(compilation, hits, requests, initiatorNames);
+        CompilationDto dto = CompilationMapper.toDto(compilation, Set.of(event));
 
         assertEquals(10L, dto.getId());
         assertEquals("Compilation", dto.getTitle());
@@ -75,27 +72,8 @@ class CompilationMapperTest {
         assertEquals(1, dto.getEvents().size());
 
         EventShortDto eventDto = dto.getEvents().iterator().next();
-        assertEquals(15L, eventDto.getViews());
-        assertEquals(7L, eventDto.getConfirmedRequests());
-    }
-
-    @Test
-    void toDto_shouldUseDefaultValuesWhenMapsAreEmpty() {
-
-        compilation.setEvents(Set.of(event));
-
-        CompilationDto dto = CompilationMapper.toDto(
-                compilation,
-                Map.of(),
-                Map.of(),
-                Map.of()
-        );
-
-        EventShortDto eventDto = dto.getEvents().iterator().next();
-
-        assertEquals(0L, eventDto.getViews());
-        assertEquals(0L, eventDto.getConfirmedRequests());
-        assertEquals(1L, eventDto.getInitiator().getId());
+        assertEquals(event.getViews(), eventDto.getViews());
+        assertEquals(event.getConfirmedRequests(), eventDto.getConfirmedRequests());
     }
 
     @Test
@@ -123,20 +101,19 @@ class CompilationMapperTest {
 
     @Test
     void toEntity_shouldMapAllFields() {
-        Event event = Event.builder()
-                .id(1L)
-                .build();
+
+        Set<Long> eventIds = Set.of(1L);
 
         NewCompilationDto dto = new NewCompilationDto();
         dto.setTitle("Compilation");
         dto.setPinned(true);
-        dto.setEvents(Set.of(1L));
+        dto.setEvents(eventIds);
 
-        Compilation entity = CompilationMapper.toEntity(dto, Set.of(event));
+        Compilation entity = CompilationMapper.toEntity(dto);
 
         assertEquals("Compilation", entity.getTitle());
         assertTrue(entity.getPinned());
-        assertEquals(Set.of(event), entity.getEvents());
+        assertEquals(eventIds, entity.getEventIds());
     }
 
     @Test
@@ -144,11 +121,11 @@ class CompilationMapperTest {
         NewCompilationDto dto = new NewCompilationDto();
         dto.setTitle("Compilation");
 
-        Compilation entity = CompilationMapper.toEntity(dto, Set.of());
+        Compilation entity = CompilationMapper.toEntity(dto);
 
         assertEquals("Compilation", entity.getTitle());
         assertFalse(entity.getPinned());
-        assertTrue(entity.getEvents().isEmpty());
+        assertTrue(entity.getEventIds().isEmpty());
     }
 
 }

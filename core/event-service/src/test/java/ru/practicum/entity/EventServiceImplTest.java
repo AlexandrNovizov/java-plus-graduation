@@ -1,4 +1,4 @@
-package ru.practicum.entity.event;
+package ru.practicum.entity;
 
 import com.querydsl.core.types.Predicate;
 import org.junit.jupiter.api.Test;
@@ -8,14 +8,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import ru.practicum.entity.Event;
+import ru.practicum.entity.EventRepository;
+import ru.practicum.entity.EventServiceImpl;
+import ru.practicum.entity.Location;
+import ru.practicum.feign.CategoryFeignClient;
 import ru.practicum.feign.RequestFeignClient;
 import ru.practicum.StatClient;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.event.*;
 import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.dto.user.UserShortDto;
-import ru.practicum.entity.category.Category;
-import ru.practicum.entity.category.CategoryService;
 import ru.practicum.enums.event.AdminStateAction;
 import ru.practicum.enums.event.EventState;
 import ru.practicum.enums.request.RequestStatus;
@@ -40,7 +43,7 @@ class EventServiceImplTest {
     @Mock
     private EventRepository eventRepository;
     @Mock
-    private CategoryService categoryService;
+    private CategoryFeignClient categoryClient;
     @Mock
     private UserFeignClient userClient;
     @Mock
@@ -61,8 +64,8 @@ class EventServiceImplTest {
                 .size(10)
                 .build();
 
-        Category category = Category.builder().id(1L).name("cat").build();
-        UserShortDto initiator = UserShortDto.builder().id(1L).name("user").build();
+        long categoryId = 1L;
+        long initiatorId = 1L;
 
         Event event = Event.builder()
                 .id(1L)
@@ -70,8 +73,8 @@ class EventServiceImplTest {
                 .createdOn(LocalDateTime.now())
                 .eventDate(LocalDateTime.now().plusDays(1))
                 .location(new Location(1.1f,1.1f))
-                .category(category)
-                .initiatorId(initiator.getId())
+                .categoryId(categoryId)
+                .initiatorId(initiatorId)
                 .build();
 
         when(eventRepository.findAll(any(Predicate.class), any(Pageable.class)))
@@ -86,7 +89,7 @@ class EventServiceImplTest {
 
     @Test
     void updateEventByAdmin_publishEvent_shouldSetPublished() {
-        Category category = Category.builder().id(1L).name("cat").build();
+        CategoryDto category = CategoryDto.builder().id(1L).name("cat").build();
         UserFullDto initiator = UserFullDto.builder().id(1L).name("user").build();
 
         Event event = Event.builder()
@@ -95,7 +98,7 @@ class EventServiceImplTest {
                 .eventDate(LocalDateTime.now().plusDays(1))
                 .createdOn(LocalDateTime.now())
                 .location(new Location(1.1f,1.1f))
-                .category(category)
+                .categoryId(category.getId())
                 .initiatorId(initiator.getId())
                 .build();
 
@@ -110,6 +113,8 @@ class EventServiceImplTest {
         when(userClient.findById(anyLong())).thenReturn(initiator);
         when(requestClient.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED))
                 .thenReturn(new EventRequestsCountDto(event.getId(), 1L));
+        when(categoryClient.findById(anyLong()))
+                .thenReturn(category);
 
         EventFullDto result = eventService.updateEventByAdmin(1L, request);
 
@@ -119,15 +124,15 @@ class EventServiceImplTest {
 
     @Test
     void updateEventByAdmin_publishEvent_wrongState_shouldThrowConflict() {
-        Category category = Category.builder().id(1L).name("cat").build();
-        UserShortDto initiator = UserShortDto.builder().id(1L).name("user").build();
+        long categoryId = 1L;
+        long initiatorId = 1L;
 
         Event event = Event.builder()
                 .id(1L)
                 .state(EventState.PUBLISHED)
                 .eventDate(LocalDateTime.now().plusDays(1))
-                .category(category)
-                .initiatorId(initiator.getId())
+                .categoryId(categoryId)
+                .initiatorId(initiatorId)
                 .build();
 
         UpdateEventAdminRequest request = UpdateEventAdminRequest.builder()
@@ -167,7 +172,7 @@ class EventServiceImplTest {
                 .build();
 
         when(userClient.findById(1L)).thenReturn(user);
-        when(categoryService.findById(1L)).thenReturn(categoryDto);
+        when(categoryClient.findById(1L)).thenReturn(categoryDto);
         when(eventRepository.save(any())).thenAnswer(inv -> {
             Event e = inv.getArgument(0);
             e.setId(1L);

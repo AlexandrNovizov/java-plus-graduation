@@ -1,4 +1,4 @@
-package ru.practicum.controller.admin;
+package ru.practicum.controller;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.EventAdminParamDto;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.UpdateEventAdminRequest;
-import ru.practicum.entity.event.EventService;
+import ru.practicum.entity.EventService;
 
 import java.util.List;
 

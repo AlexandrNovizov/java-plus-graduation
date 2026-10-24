@@ -16,6 +16,7 @@
         <module>user-service</module>
         <module>core-common</module>
         <module>request-service</module>
+        <module>event-service</module>
     </modules>
 
     <properties>

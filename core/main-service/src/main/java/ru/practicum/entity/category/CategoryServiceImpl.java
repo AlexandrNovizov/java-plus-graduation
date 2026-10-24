@@ -8,11 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.category.CategoriesParamDto;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.NewCategoryDto;
-import ru.practicum.entity.event.EventRepository;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.EventFeignClient;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +21,7 @@ import java.util.List;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final EventRepository eventRepository;
+    private final EventFeignClient eventClient;
 
     @Override
     @Transactional
@@ -36,7 +37,7 @@ public class CategoryServiceImpl implements CategoryService {
     public void delete(long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found!"));
-        if (eventRepository.existsByCategoryId(id)) {
+        if (eventClient.existsByCategoryId(id)) {
             throw new ConflictException("Category has related events!");
         }
         categoryRepository.delete(category);
@@ -64,5 +65,16 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto findById(long id) {
         return CategoryMapper.toDto(categoryRepository
                 .findById(id).orElseThrow(() -> new NotFoundException("Category not found!")));
+    }
+
+    @Override
+    public List<CategoryDto> findByIds(Set<Long> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+
+        return categoryRepository.findByIdIn(ids).stream()
+                .map(CategoryMapper::toDto)
+                .toList();
     }
 }

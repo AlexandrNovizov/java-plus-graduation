@@ -1,4 +1,4 @@
-package ru.practicum.controller.private_api;
+package ru.practicum.controller;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.*;
 import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.entity.event.EventService;
+import ru.practicum.entity.EventService;
 
 import java.util.List;
 

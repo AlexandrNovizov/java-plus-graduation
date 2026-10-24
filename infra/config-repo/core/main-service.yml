@@ -27,5 +27,5 @@ spring:
             connectTimeout: 2000
             readTimeout: 3000
 
-stats-service:
-  id: stat-service
+#stats-service:
+#  id: stat-service

@@ -7,19 +7,16 @@ import ru.practicum.dto.comment.LogComment;
 import ru.practicum.dto.comment.NewCommentDto;
 import ru.practicum.dto.comment.UserCommentAdminDto;
 import ru.practicum.dto.user.UserFullDto;
-import ru.practicum.dto.user.UserShortDto;
-import ru.practicum.entity.event.Event;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class CommentMapperTest {
 
     private UserFullDto testUser;
-    private Event testEvent;
+    private long testEventId;
     private LocalDateTime fixedTime;
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -32,9 +29,7 @@ class CommentMapperTest {
         testUser.setName("Иван Иванов");
         testUser.setAdminWarnings(3);
         testUser.setBannedUntil(fixedTime.format(formatter));
-
-        testEvent = new Event();
-        testEvent.setId(10L);
+        testEventId = 10L;
     }
 
 
@@ -42,12 +37,12 @@ class CommentMapperTest {
     void toComment_whenValid_thenMapCorrectly() {
         NewCommentDto newCommentDto = new NewCommentDto("Текст тестового комментария", 10L);
 
-        Comment result = CommentMapper.toComment(newCommentDto, testUser.getId(), testEvent);
+        Comment result = CommentMapper.toComment(newCommentDto, testUser.getId());
 
         assertNotNull(result);
         assertEquals("Текст тестового комментария", result.getText());
         assertEquals(testUser.getId(), result.getAuthorId());
-        assertEquals(testEvent, result.getEvent());
+        assertEquals(newCommentDto.getEventId(), result.getEventId());
     }
 
     @Test
@@ -56,7 +51,7 @@ class CommentMapperTest {
                 .id(100L)
                 .text("Привет")
                 .authorId(testUser.getId())
-                .event(testEvent)
+                .eventId(testEventId)
                 .created(fixedTime)
                 .updated(null) // проверяем ветку, когда обновлений не было
                 .build();
@@ -79,7 +74,7 @@ class CommentMapperTest {
                 .id(100L)
                 .text("Привет")
                 .authorId(testUser.getId())
-                .event(testEvent)
+                .eventId(testEventId)
                 .created(fixedTime)
                 .updated(fixedTime.plusHours(2)) // 2026-07-02 21:00:00
                 .build();

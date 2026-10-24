@@ -13,12 +13,14 @@ import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.NewCommentDto;
 import ru.practicum.dto.comment.UpdateCommentDto;
 import ru.practicum.dto.comment.UserCommentAdminDto;
+import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.user.UserFullDto;
-import ru.practicum.entity.event.Event;
-import ru.practicum.entity.event.EventService;
+import ru.practicum.enums.comment.CommentsRank;
 import ru.practicum.enums.event.EventState;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.EventFeignClient;
 import ru.practicum.feign.UserFeignClient;
 
 import java.time.LocalDateTime;
@@ -39,7 +41,7 @@ class CommentServiceImplTest {
     @Mock
     private UserFeignClient userClient;
     @Mock
-    private EventService eventService;
+    private EventFeignClient eventClient;
 
     @InjectMocks
     private CommentServiceImpl commentService;
@@ -47,12 +49,12 @@ class CommentServiceImplTest {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private UserFullDto testUser;
-    private Event testEvent;
+    private EventFullDto testEvent;
     private Comment testComment;
 
     @BeforeEach
     void setUp() {
-        commentService = new CommentServiceImpl(commentRepository, userClient, eventService);
+        commentService = new CommentServiceImpl(commentRepository, userClient, eventClient);
 
         testUser = new UserFullDto();
         testUser.setId(1L);
@@ -61,15 +63,15 @@ class CommentServiceImplTest {
         testUser.setBannedUntil(null);
         testUser.setAdminWarnings(0);
 
-        testEvent = new Event();
+        testEvent = new EventFullDto();
         testEvent.setId(10L);
-        testEvent.setState(EventState.PUBLISHED);
+        testEvent.setState(EventState.PUBLISHED.toString());
 
         testComment = new Comment();
         testComment.setId(20L);
         testComment.setAdminWarning(false);
         testComment.setAuthorId(testUser.getId());
-        testComment.setEvent(testEvent);
+        testComment.setEventId(testEvent.getId());
         testComment.setCreated(LocalDateTime.now().minusDays(10));
         testComment.setUpdated(null);
     }
@@ -86,7 +88,7 @@ class CommentServiceImplTest {
 
         when(userClient.findById(1L)).thenReturn(testUser);
         when(userClient.updateUser(testUser)).thenReturn(updatedUser);
-        when(eventService.findEventByIdAndState(10L, EventState.PUBLISHED)).thenReturn(testEvent);
+        when(eventClient.isEventExists(10L)).thenReturn(true);
 
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment c = invocation.getArgument(0);
@@ -125,7 +127,7 @@ class CommentServiceImplTest {
         when(userClient.findById(1L)).thenReturn(testUser);
         when(userClient.updateUser(Mockito.any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        when(eventService.findEventByIdAndState(10L, EventState.PUBLISHED)).thenReturn(testEvent);
+        when(eventClient.isEventExists(10L)).thenReturn(true);
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment c = invocation.getArgument(0);
             c.setCreated(LocalDateTime.now());
@@ -138,7 +140,7 @@ class CommentServiceImplTest {
 
     @Test
     void updateComment_whenValid_thenSuccess() {
-        Event fakeEvent = new Event();
+        EventFullDto fakeEvent = new EventFullDto();
         fakeEvent.setId(10L);
 
         Comment existingComment = new Comment();
@@ -147,7 +149,7 @@ class CommentServiceImplTest {
         existingComment.setUpdated(LocalDateTime.now());
         existingComment.setText("Старый текст");
         existingComment.setAuthorId(testUser.getId());
-        existingComment.setEvent(fakeEvent);
+        existingComment.setEventId(fakeEvent.getId());
 
         UpdateCommentDto updateDto = new UpdateCommentDto();
         updateDto.setCommentId(100L);
@@ -216,20 +218,19 @@ class CommentServiceImplTest {
 
     @Test
     void getComments_whenCalled_thenReturnsList() {
-        Event fakeEvent = new Event();
-        fakeEvent.setId(10L);
+        long fakeEventId = 10L;
 
         Comment c1 = new Comment();
         c1.setId(100L);
         c1.setAuthorId(testUser.getId());
-        c1.setEvent(fakeEvent);
+        c1.setEventId(fakeEventId);
         c1.setText("Текст 1");
         c1.setCreated(LocalDateTime.now());
 
         Comment c2 = new Comment();
         c2.setId(101L);
         c2.setAuthorId(testUser.getId());
-        c2.setEvent(fakeEvent);
+        c2.setEventId(fakeEventId);
         c2.setText("Текст 2");
         c2.setCreated(LocalDateTime.now());
 
@@ -328,7 +329,7 @@ class CommentServiceImplTest {
     void getEventComments_WhenCommentsExist_ThenReturnDtoList() {
         Long eventId = 1L;
         when(commentRepository.findAllByEventId(eventId)).thenReturn(List.of(testComment));
-        when(eventService.isEventExists(eventId)).thenReturn(true);
+        when(eventClient.isEventExists(eventId)).thenReturn(true);
 
         List<CommentDto> result = commentService.getEventComments(eventId);
 

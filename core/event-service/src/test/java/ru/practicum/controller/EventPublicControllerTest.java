@@ -1,4 +1,4 @@
-package ru.practicum.main.controller.public_api;
+package ru.practicum.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,11 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.controller.public_api.EventPublicController;
+import ru.practicum.controller.EventPublicController;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventPublicParamDto;
 import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.entity.event.EventService;
+import ru.practicum.entity.EventService;
 
 import java.util.List;
 

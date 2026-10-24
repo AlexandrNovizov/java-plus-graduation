@@ -13,7 +13,6 @@ import org.hibernate.validator.constraints.Length;
 @AllArgsConstructor
 @Builder
 public class CategoryDto {
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long id;
 
     @NotBlank

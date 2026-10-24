@@ -11,9 +11,9 @@ import org.springframework.data.domain.Pageable;
 import ru.practicum.dto.category.CategoriesParamDto;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.NewCategoryDto;
-import ru.practicum.entity.event.EventRepository;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.EventFeignClient;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +29,7 @@ class CategoryServiceImplTest {
     private CategoryRepository categoryRepository;
 
     @Mock
-    private EventRepository eventRepository;
+    private EventFeignClient eventClient;
 
     @InjectMocks
     private CategoryServiceImpl categoryService;
@@ -77,7 +77,7 @@ class CategoryServiceImplTest {
                 .build();
 
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(eventRepository.existsByCategoryId(1L)).thenReturn(false);
+        when(eventClient.existsByCategoryId(1L)).thenReturn(false);
 
         categoryService.delete(1L);
 

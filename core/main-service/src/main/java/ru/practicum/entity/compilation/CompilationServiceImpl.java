@@ -11,14 +11,13 @@ import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.CompilationsParamDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.compilation.UpdateCompilationRequest;
-import ru.practicum.dto.util.UserUtil;
-import ru.practicum.entity.event.Event;
-import ru.practicum.entity.event.EventService;
+import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.feign.UserFeignClient;
+import ru.practicum.feign.EventFeignClient;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,8 +27,7 @@ import java.util.stream.Collectors;
 public class CompilationServiceImpl implements CompilationService {
 
     private final CompilationRepository compilationRepository;
-    private final EventService eventService;
-    private final UserFeignClient userClient;
+    private final EventFeignClient eventClient;
 
     @Override
     public List<CompilationDto> getAll(CompilationsParamDto dto) {
@@ -48,23 +46,23 @@ public class CompilationServiceImpl implements CompilationService {
             return List.of();
         }
 
-        List<Event> events = compilations.stream()
-                .map(Compilation::getEvents)
+        Set<Long> eventIds = compilations.stream()
+                .map(Compilation::getEventIds)
                 .flatMap(Collection::stream)
-                .toList();
+                 .collect(Collectors.toSet());
 
-        Map<Long, Long> hitsMap = eventService.getViewsMap(events);
-        Map<Long, Long> eventsIdRequestsCount = eventService.getEventsRequests(events);
+        Map<Long, EventShortDto> events = eventClient.getByIds(eventIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        EventShortDto::getId,
+                        Function.identity()
+                ));
 
-        Set<Long> initiatorIds = events.stream()
-                .map(Event::getInitiatorId)
-                .collect(Collectors.toSet());
-
-        Map<Long, String> initiatorNames = UserUtil.getUserNamesMap(userClient, initiatorIds);
+        Map<Long, Set<EventShortDto>> compilationEventsMap = getCompilationEventsMap(compilations, events);
 
         return compilations.stream()
                 .map(compilation ->
-                        CompilationMapper.toDto(compilation, hitsMap, eventsIdRequestsCount, initiatorNames))
+                        CompilationMapper.toDto(compilation, compilationEventsMap.get(compilation.getId())))
                 .toList();
     }
 
@@ -72,19 +70,10 @@ public class CompilationServiceImpl implements CompilationService {
     public CompilationDto getById(Long compId) {
         Compilation compilation = getByIdWithEvents(compId);
 
-        List<Event> events = compilation.getEvents().stream()
-                .toList();
+        Set<Long> eventIds = compilation.getEventIds();
+        Set<EventShortDto> events = new HashSet<>(eventClient.getByIds(eventIds));
 
-        Map<Long, Long> hitsMap = eventService.getViewsMap(events);
-        Map<Long, Long> eventsIdRequestsCount = eventService.getEventsRequests(events);
-
-        Set<Long> initiatorIds = events.stream()
-                .map(Event::getInitiatorId)
-                .collect(Collectors.toSet());
-
-        Map<Long, String> initiatorNames = UserUtil.getUserNamesMap(userClient, initiatorIds);
-
-        return CompilationMapper.toDto(compilation, hitsMap, eventsIdRequestsCount, initiatorNames);
+        return CompilationMapper.toDto(compilation, events);
     }
 
     @Override
@@ -95,20 +84,11 @@ public class CompilationServiceImpl implements CompilationService {
             throw new ConflictException("Compilation with title " + dto.getTitle() + " already exists");
         }
 
-        List<Event> events = eventService.getByIds(dto.getEvents());
-        Compilation entity = CompilationMapper.toEntity(dto, new HashSet<>(events));
+        Set<EventShortDto> events = new HashSet<>(eventClient.getByIds(dto.getEvents()));
+        Compilation entity = CompilationMapper.toEntity(dto);
         entity = compilationRepository.save(entity);
 
-        Map<Long, Long> hitsMap = eventService.getViewsMap(events);
-        Map<Long, Long> eventsIdRequestsCount = eventService.getEventsRequests(events);
-
-        Set<Long> initiatorIds = events.stream()
-                .map(Event::getInitiatorId)
-                .collect(Collectors.toSet());
-
-        Map<Long, String> initiatorNames = UserUtil.getUserNamesMap(userClient, initiatorIds);
-
-        var compilationDto = CompilationMapper.toDto(entity, hitsMap, eventsIdRequestsCount, initiatorNames);
+        var compilationDto = CompilationMapper.toDto(entity, events);
         log.info("Новая подборка событий: {}", CompilationMapper.toLog(compilationDto));
 
         return compilationDto;
@@ -131,17 +111,11 @@ public class CompilationServiceImpl implements CompilationService {
 
         updateFields(compilation, request);
 
-        List<Event> events = compilation.getEvents().stream()
-                .toList();
+        Set<Long> eventIds = compilation.getEventIds();
 
-        Map<Long, Long> hitsMap = eventService.getViewsMap(events);
-        Map<Long, Long> eventsIdRequestsCount = eventService.getEventsRequests(events);
-        Set<Long> initiatorIds = events.stream()
-                .map(Event::getInitiatorId)
-                .collect(Collectors.toSet());
+        Set<EventShortDto> events = new HashSet<>(eventClient.getByIds(eventIds));
+        var compilationDto = CompilationMapper.toDto(compilation, events);
 
-        Map<Long, String> initiatorNames = UserUtil.getUserNamesMap(userClient, initiatorIds);
-        var compilationDto = CompilationMapper.toDto(compilation, hitsMap, eventsIdRequestsCount, initiatorNames);
         log.info("Подборка событий обновлена: {}", CompilationMapper.toLog(compilationDto));
 
         return compilationDto;
@@ -169,13 +143,25 @@ public class CompilationServiceImpl implements CompilationService {
             old.setPinned(request.getPinned());
         }
 
-        Set<Long> oldIds = old.getEvents().stream()
-                .map(Event::getId)
+        Set<Long> oldIds = old.getEventIds().stream()
                 .collect(Collectors.toUnmodifiableSet());
 
         if (request.getEvents() != null && !oldIds.equals(request.getEvents())) {
-            List<Event> newEvents = eventService.getByIds(request.getEvents());
-            old.setEvents(new HashSet<>(newEvents));
+            old.setEventIds(request.getEvents());
         }
+    }
+
+    Map<Long, Set<EventShortDto>> getCompilationEventsMap(List<Compilation> compilations,
+                                                     Map<Long, EventShortDto> eventsMap) {
+
+        Map<Long, Set<EventShortDto>> result = new HashMap<>();
+        Set<EventShortDto> events;
+        for (Compilation compilation : compilations) {
+            events = compilation.getEventIds().stream()
+                    .map(eventsMap::get)
+                    .collect(Collectors.toSet());
+            result.put(compilation.getId(), events);
+        }
+        return result;
     }
 }

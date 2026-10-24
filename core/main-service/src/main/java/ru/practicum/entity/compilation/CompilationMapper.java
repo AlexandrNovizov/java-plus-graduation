@@ -4,8 +4,8 @@ import lombok.experimental.UtilityClass;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.LogCompilation;
 import ru.practicum.dto.compilation.NewCompilationDto;
-import ru.practicum.entity.event.Event;
-import ru.practicum.entity.event.EventMapper;
+import ru.practicum.dto.event.EventShortDto;
+import ru.practicum.dto.mapper.EventMapper;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -14,21 +14,12 @@ import java.util.stream.Collectors;
 public class CompilationMapper {
 
     public static CompilationDto toDto(Compilation entity,
-                                       Map<Long, Long> eventHits,
-                                       Map<Long, Long> eventRequestsCount,
-                                       Map<Long, String> initiatorNames) {
+                                       Set<EventShortDto> events) {
         return CompilationDto.builder()
                 .id(entity.getId())
                 .title(entity.getTitle())
                 .pinned(entity.getPinned())
-                .events(entity.getEvents().stream()
-                        .map(event -> EventMapper.toEventShortDto(
-                                event,
-                                eventRequestsCount.getOrDefault(event.getId(), 0L),
-                                eventHits.getOrDefault(event.getId(), 0L),
-                                initiatorNames.get(event.getInitiatorId())
-                        ))
-                        .collect(Collectors.toSet()))
+                .events(events)
                 .build();
     }
 
@@ -43,14 +34,12 @@ public class CompilationMapper {
                 .build();
     }
 
-    public static Compilation toEntity(NewCompilationDto dto, Set<Event> events) {
+    public static Compilation toEntity(NewCompilationDto dto) {
         Compilation entity = new Compilation();
 
         Optional.ofNullable(dto.getPinned()).ifPresent(entity::setPinned);
 
-        if (dto.getEvents() != null) {
-            entity.setEvents(events);
-        }
+        entity.setEventIds(dto.getEvents());
 
         entity.setTitle(dto.getTitle());
 

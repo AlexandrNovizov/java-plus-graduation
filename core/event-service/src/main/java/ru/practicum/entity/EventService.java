@@ -1,4 +1,4 @@
-package ru.practicum.entity.event;
+package ru.practicum.entity;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +9,7 @@ import ru.practicum.enums.event.EventState;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface EventService {
     // Admin
@@ -46,4 +47,8 @@ public interface EventService {
 
     // Feign
     EventFullDto getByEventId(Long eventId);
+
+    List<EventShortDto> getByEventIds(Set<Long> ids);
+
+    boolean existsByCategoryId(Long categoryId);
 }

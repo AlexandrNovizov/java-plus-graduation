@@ -1,4 +1,4 @@
-package ru.practicum.controller.public_api;
+package ru.practicum.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventPublicParamDto;
 import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.entity.event.EventService;
+import ru.practicum.entity.EventService;
 
 import java.util.List;
 

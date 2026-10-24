@@ -6,7 +6,6 @@ import ru.practicum.dto.comment.LogComment;
 import ru.practicum.dto.comment.NewCommentDto;
 import ru.practicum.dto.comment.UserCommentAdminDto;
 import ru.practicum.dto.user.UserFullDto;
-import ru.practicum.entity.event.Event;
 
 import java.time.format.DateTimeFormatter;
 
@@ -15,11 +14,11 @@ public class CommentMapper {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static Comment toComment(NewCommentDto comment, Long authorId, Event event) {
+    public static Comment toComment(NewCommentDto comment, Long authorId) {
         return Comment.builder()
                 .text(comment.getText())
                 .authorId(authorId)
-                .event(event)
+                .eventId(comment.getEventId())
                 .build();
     }
 
@@ -27,7 +26,7 @@ public class CommentMapper {
         return CommentDto.builder()
                 .id(comment.getId())
                 .authorId(comment.getAuthorId())
-                .eventId(comment.getEvent().getId())
+                .eventId(comment.getEventId())
                 .authorName(authorName)
                 .text(comment.getText())
                 .created(comment.getCreated().format(formatter))

@@ -14,28 +14,26 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.CompilationsParamDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.compilation.UpdateCompilationRequest;
+import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.LocationDto;
 import ru.practicum.dto.user.UserDto;
-import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.dto.user.UserParamDto;
 import ru.practicum.dto.user.UserShortDto;
-import ru.practicum.entity.category.Category;
-import ru.practicum.entity.event.Event;
-import ru.practicum.entity.event.EventService;
-import ru.practicum.entity.event.Location;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.enums.event.EventState;
+import ru.practicum.feign.EventFeignClient;
 import ru.practicum.feign.UserFeignClient;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -48,7 +46,7 @@ class CompilationServiceImplTest {
     private CompilationRepository compilationRepository;
 
     @Mock
-    private EventService eventService;
+    private EventFeignClient eventClient;
 
     @Mock
     private UserFeignClient userClient;
@@ -56,42 +54,45 @@ class CompilationServiceImplTest {
     @InjectMocks
     private CompilationServiceImpl compilationService;
 
-    private Event event;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private EventFullDto event;
     private Compilation compilation;
-    private UserDto user;
+    private UserShortDto user;
 
     @BeforeEach
     void setUp() {
-        user = UserDto.builder()
+        user = UserShortDto.builder()
                 .id(1L)
                 .name("Roman")
                 .build();
 
-        Category category = Category.builder()
+        CategoryDto category = CategoryDto.builder()
                 .id(1L)
                 .name("Category")
                 .build();
 
-        event = Event.builder()
+        event = EventFullDto.builder()
                 .id(1L)
                 .annotation("annotation")
                 .title("Event")
                 .category(category)
-                .initiatorId(user.getId())
-                .eventDate(LocalDateTime.of(2026, 1, 1, 12, 0))
-                .createdOn(LocalDateTime.of(2025, 1, 1, 12, 0))
+                .initiator(user)
+                .eventDate(LocalDateTime.of(2026, 1, 1, 12, 0).format(formatter))
+                .createdOn(LocalDateTime.of(2025, 1, 1, 12, 0).format(formatter))
                 .paid(false)
                 .participantLimit(0)
                 .requestModeration(true)
-                .state(EventState.PUBLISHED)
-                .location(new Location(10f, 20f))
+                .state(EventState.PUBLISHED.toString())
+                .location(new LocationDto(10f, 20f))
+                .confirmedRequests(3L)
+                .views(20L)
                 .build();
 
         compilation = Compilation.builder()
                 .id(1L)
                 .title("Compilation")
                 .pinned(true)
-                .events(Set.of(event))
+                .eventIds(Set.of(event.getId()))
                 .build();
     }
 
@@ -105,11 +106,8 @@ class CompilationServiceImplTest {
         when(compilationRepository.findAll(Mockito.<Pageable>any()))
                 .thenReturn(new PageImpl<>(List.of(compilation)));
 
-        when(eventService.getViewsMap(anyList()))
-                .thenReturn(Map.of(1L, 15L));
-
-        when(eventService.getEventsRequests(anyList()))
-                .thenReturn(Map.of(1L, 7L));
+        when(eventClient.getByIds(anySet()))
+                .thenReturn(List.of(makeShort(event)));
 
         List<CompilationDto> result = compilationService.getAll(params);
 
@@ -123,12 +121,11 @@ class CompilationServiceImplTest {
 
         EventShortDto shortDto = dto.getEvents().iterator().next();
 
-        assertEquals(15L, shortDto.getViews());
-        assertEquals(7L, shortDto.getConfirmedRequests());
+        assertEquals(event.getViews(), shortDto.getViews());
+        assertEquals(event.getConfirmedRequests(), shortDto.getConfirmedRequests());
 
         verify(compilationRepository).findAll(Mockito.<Pageable>any());
-        verify(eventService).getViewsMap(anyList());
-        verify(eventService).getEventsRequests(anyList());
+        verify(eventClient).getByIds(anySet());
     }
 
     @Test
@@ -144,11 +141,8 @@ class CompilationServiceImplTest {
                 Mockito.<Pageable>any()))
                 .thenReturn(new PageImpl<>(List.of(compilation)));
 
-        when(eventService.getViewsMap(anyList()))
-                .thenReturn(Map.of());
-
-        when(eventService.getEventsRequests(anyList()))
-                .thenReturn(Map.of());
+        when(eventClient.getByIds(anySet()))
+                .thenReturn(List.of(makeShort(event)));
 
         List<CompilationDto> result = compilationService.getAll(params);
 
@@ -178,7 +172,7 @@ class CompilationServiceImplTest {
 
         assertTrue(result.isEmpty());
 
-        verifyNoInteractions(eventService);
+        verifyNoInteractions(eventClient);
     }
 
     @Test
@@ -186,11 +180,8 @@ class CompilationServiceImplTest {
         when(compilationRepository.findWithEventsById(1L))
                 .thenReturn(Optional.of(compilation));
 
-        when(eventService.getViewsMap(anyList()))
-                .thenReturn(Map.of(1L, 20L));
-
-        when(eventService.getEventsRequests(anyList()))
-                .thenReturn(Map.of(1L, 3L));
+        when(eventClient.getByIds(anySet()))
+                .thenReturn(List.of(makeShort(event)));
 
         CompilationDto dto = compilationService.getById(1L);
 
@@ -198,8 +189,8 @@ class CompilationServiceImplTest {
 
         EventShortDto shortDto = dto.getEvents().iterator().next();
 
-        assertEquals(20L, shortDto.getViews());
-        assertEquals(3L, shortDto.getConfirmedRequests());
+        assertEquals(event.getViews(), shortDto.getViews());
+        assertEquals(event.getConfirmedRequests(), shortDto.getConfirmedRequests());
 
         verify(compilationRepository).findWithEventsById(1L);
     }
@@ -212,7 +203,7 @@ class CompilationServiceImplTest {
         assertThrows(NotFoundException.class,
                 () -> compilationService.getById(1L));
 
-        verifyNoInteractions(eventService);
+        verifyNoInteractions(eventClient);
     }
 
     @Test
@@ -221,36 +212,30 @@ class CompilationServiceImplTest {
         dto.setTitle("Compilation");
         dto.setEvents(Set.of(1L, 2L));
 
-        Event event1 = Event.builder()
+        EventShortDto event1 = EventShortDto.builder()
                 .id(1L)
-                .initiatorId(1L)
-                .category(Category.builder()
+                .initiator(new UserShortDto(1L, "initiator 1"))
+                .category(CategoryDto.builder()
                         .id(1L)
                         .name("Category1")
                         .build())
-                .eventDate(LocalDateTime.of(2026, 1, 1, 12, 0))
+                .eventDate(LocalDateTime.of(2026, 1, 1, 12, 0).format(formatter))
                 .build();
-        Event event2 = Event.builder()
+        EventShortDto event2 = EventShortDto.builder()
                 .id(2L)
-                .initiatorId(2L)
-                .category(Category.builder()
+                .initiator(new UserShortDto(2L, "initiator 2"))
+                .category(CategoryDto.builder()
                         .id(2L)
                         .name("Category2")
                         .build())
-                .eventDate(LocalDateTime.of(2026, 1, 1, 12, 0))
+                .eventDate(LocalDateTime.of(2026, 1, 1, 12, 0).format(formatter))
                 .build();
 
         when(compilationRepository.existsByTitle("Compilation"))
                 .thenReturn(false);
 
-        when(eventService.getByIds(dto.getEvents()))
+        when(eventClient.getByIds(dto.getEvents()))
                 .thenReturn(List.of(event1, event2));
-
-        when(eventService.getViewsMap(anyList()))
-                .thenReturn(Map.of(1L, 10L, 2L, 20L));
-
-        when(eventService.getEventsRequests(anyList()))
-                .thenReturn(Map.of(1L, 5L, 2L, 7L));
 
         when(compilationRepository.save(Mockito.any(Compilation.class)))
                 .thenAnswer(invocation -> {
@@ -267,7 +252,7 @@ class CompilationServiceImplTest {
         assertEquals(2, result.getEvents().size());
 
         verify(compilationRepository).existsByTitle("Compilation");
-        verify(eventService).getByIds(dto.getEvents());
+        verify(eventClient).getByIds(dto.getEvents());
         verify(compilationRepository).save(Mockito.<Compilation>any());
     }
 
@@ -284,7 +269,7 @@ class CompilationServiceImplTest {
                 () -> compilationService.create(dto));
 
         verify(compilationRepository, never()).save(any());
-        verifyNoInteractions(eventService);
+        verifyNoInteractions(eventClient);
     }
 
     @Test
@@ -322,11 +307,8 @@ class CompilationServiceImplTest {
         when(compilationRepository.findWithEventsById(1L))
                 .thenReturn(Optional.of(compilation));
 
-        when(eventService.getViewsMap(anyList()))
-                .thenReturn(Map.of(1L, 10L));
-
-        when(eventService.getEventsRequests(anyList()))
-                .thenReturn(Map.of(1L, 5L));
+        when(eventClient.getByIds(anySet()))
+                .thenReturn(List.of(makeShort(event)));
 
         CompilationDto result = compilationService.update(1L, request);
 
@@ -344,11 +326,7 @@ class CompilationServiceImplTest {
         when(compilationRepository.findWithEventsById(1L))
                 .thenReturn(Optional.of(compilation));
 
-        when(eventService.getViewsMap(anyList()))
-                .thenReturn(Map.of());
-        when(eventService.getEventsRequests(anyList()))
-                .thenReturn(Map.of());
-        when(userClient.getUsers(any(UserParamDto.class)))
+        when(eventClient.getByIds(anySet()))
                 .thenReturn(List.of());
 
         CompilationDto result = compilationService.update(1L, request);
@@ -362,70 +340,38 @@ class CompilationServiceImplTest {
         UpdateCompilationRequest request = new UpdateCompilationRequest();
         request.setEvents(Set.of(2L, 3L));
 
-        Category category = Category.builder().id(1L).name("Category").build();
+        CategoryDto category = CategoryDto.builder().id(1L).name("Category").build();
         UserDto user = UserDto.builder().id(1L).name("User").build();
 
-        Event event2 = Event.builder()
+        EventShortDto event2 = EventShortDto.builder()
                 .id(2L)
                 .category(category)
-                .initiatorId(user.getId())
+                .initiator(makeShort(user))
                 .annotation("a")
                 .title("t")
-                .eventDate(LocalDateTime.of(2026, 1, 1, 10, 0))
+                .eventDate(LocalDateTime.of(2026, 1, 1, 10, 0).format(formatter))
                 .build();
 
-        Event event3 = Event.builder()
+        EventShortDto event3 = EventShortDto.builder()
                 .id(3L)
                 .category(category)
-                .initiatorId(user.getId())
+                .initiator(makeShort(user))
                 .annotation("a")
                 .title("t")
-                .eventDate(LocalDateTime.of(2026, 1, 1, 10, 0))
+                .eventDate(LocalDateTime.of(2026, 1, 1, 10, 0).format(formatter))
                 .build();
 
         when(compilationRepository.findWithEventsById(1L))
                 .thenReturn(Optional.of(compilation));
 
-        when(eventService.getByIds(request.getEvents()))
+        when(eventClient.getByIds(request.getEvents()))
                 .thenReturn(List.of(event2, event3));
-
-        when(eventService.getViewsMap(anyList()))
-                .thenReturn(Map.of());
-
-        when(eventService.getEventsRequests(anyList()))
-                .thenReturn(Map.of());
-
-        when(userClient.getUsers(any(UserParamDto.class)))
-                .thenReturn(List.of(user));
 
         CompilationDto result = compilationService.update(1L, request);
 
         assertEquals(2, result.getEvents().size());
 
-        verify(eventService).getByIds(request.getEvents());
-    }
-
-    @Test
-    void update_shouldNotCallEventServiceWhenEventsUnchanged() {
-        UpdateCompilationRequest request = new UpdateCompilationRequest();
-        request.setTitle("Compilation"); // same title
-        request.setPinned(true);
-        request.setEvents(compilation.getEvents().stream()
-                .map(Event::getId)
-                .collect(Collectors.toSet()));
-
-        when(compilationRepository.findWithEventsById(1L))
-                .thenReturn(Optional.of(compilation));
-
-        when(eventService.getViewsMap(anyList()))
-                .thenReturn(Map.of(1L, 10L));
-
-        when(eventService.getEventsRequests(anyList()))
-                .thenReturn(Map.of(1L, 5L));
-
-        compilationService.update(1L, request);
-
-        verify(eventService, never()).getByIds(any());
+        verify(eventClient).getByIds(request.getEvents());
     }
 
     @Test
@@ -437,7 +383,7 @@ class CompilationServiceImplTest {
         assertThrows(NotFoundException.class,
                 () -> compilationService.update(1L, new UpdateCompilationRequest()));
 
-        verifyNoInteractions(eventService);
+        verifyNoInteractions(eventClient);
     }
 
     @Test
@@ -459,5 +405,26 @@ class CompilationServiceImplTest {
 
         assertThrows(ConflictException.class,
                 () -> compilationService.update(1L, request));
+    }
+
+    private static UserShortDto makeShort(UserDto dto) {
+        return UserShortDto.builder()
+                .id(dto.getId())
+                .name(dto.getName())
+                .build();
+    }
+
+    private static EventShortDto makeShort(EventFullDto dto) {
+        return EventShortDto.builder()
+                .id(dto.getId())
+                .title(dto.getTitle())
+                .annotation(dto.getAnnotation())
+                .category(dto.getCategory())
+                .initiator(dto.getInitiator())
+                .eventDate(dto.getEventDate())
+                .views(dto.getViews())
+                .confirmedRequests(dto.getConfirmedRequests())
+                .paid(dto.getPaid())
+                .build();
     }
 }

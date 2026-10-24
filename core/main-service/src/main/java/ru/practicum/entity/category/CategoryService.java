@@ -5,6 +5,7 @@ import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.NewCategoryDto;
 
 import java.util.List;
+import java.util.Set;
 
 public interface CategoryService {
     CategoryDto create(NewCategoryDto payload);
@@ -17,5 +18,7 @@ public interface CategoryService {
 
     CategoryDto findById(long id);
 
+    // Feign
+    List<CategoryDto> findByIds(Set<Long> ids);
 }
 

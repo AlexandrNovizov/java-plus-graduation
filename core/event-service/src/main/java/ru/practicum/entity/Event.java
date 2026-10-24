@@ -1,8 +1,7 @@
-package ru.practicum.entity.event;
+package ru.practicum.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import ru.practicum.entity.category.Category;
 import ru.practicum.enums.event.EventState;
 
 import java.time.LocalDateTime;
@@ -21,11 +20,11 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "initiator_id", nullable = false)
     private Long initiatorId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private Category category;
+    @Column(name = "category_id", nullable = false)
+    private Long categoryId;
 
     @Column(nullable = false, length = 2000)
     private String annotation;

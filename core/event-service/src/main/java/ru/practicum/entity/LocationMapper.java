@@ -1,4 +1,4 @@
-package ru.practicum.entity.event;
+package ru.practicum.entity;
 
 import lombok.experimental.UtilityClass;
 import ru.practicum.dto.event.LocationDto;

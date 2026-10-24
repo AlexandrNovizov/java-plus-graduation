@@ -1,4 +1,4 @@
-package ru.practicum.main.controller.admin;
+package ru.practicum.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -7,10 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.controller.admin.EventAdminController;
+import ru.practicum.controller.EventAdminController;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.UpdateEventAdminRequest;
-import ru.practicum.entity.event.EventService;
+import ru.practicum.entity.EventService;
 import ru.practicum.enums.event.AdminStateAction;
 
 import java.util.Collections;
