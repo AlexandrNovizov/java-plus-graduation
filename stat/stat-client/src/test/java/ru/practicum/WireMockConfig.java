@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 public class WireMockConfig {
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    public WireMockServer mockBooksService() {
+    public WireMockServer mockService() {
         return new WireMockServer(80);
     }
 }

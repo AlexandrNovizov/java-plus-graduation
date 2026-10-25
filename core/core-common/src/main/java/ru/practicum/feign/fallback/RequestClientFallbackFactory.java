@@ -2,16 +2,17 @@ package ru.practicum.feign.fallback;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
+import org.springframework.stereotype.Component;
 import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.enums.request.RequestStatus;
 import ru.practicum.feign.RequestFeignClient;
-import ru.practicum.feign.exception.RequestServiceUnavailableException;
 
 import java.util.List;
 import java.util.Set;
 
 @Slf4j
+@Component
 public class RequestClientFallbackFactory implements FallbackFactory<RequestFeignClient> {
 
     @Override

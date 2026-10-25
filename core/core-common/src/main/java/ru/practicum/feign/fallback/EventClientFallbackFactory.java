@@ -2,6 +2,7 @@ package ru.practicum.feign.fallback;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
+import org.springframework.stereotype.Component;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.feign.EventFeignClient;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 @Slf4j
+@Component
 public class EventClientFallbackFactory implements FallbackFactory<EventFeignClient> {
 
     @Override

@@ -6,11 +6,12 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.enums.request.RequestStatus;
+import ru.practicum.feign.fallback.RequestClientFallbackFactory;
 
 import java.util.List;
 import java.util.Set;
 
-@FeignClient(name = "request-service")
+@FeignClient(name = "request-service", fallbackFactory = RequestClientFallbackFactory.class)
 public interface RequestFeignClient {
 
     @GetMapping("/internal/requests/events/{eventId}")
