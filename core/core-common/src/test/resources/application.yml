@@ -6,7 +6,7 @@ spring:
           instances:
             user-service:
               - uri: http://localhost:80
-            main-service:
+            category-service:
               - uri: http://localhost:80
             request-service:
               - uri: http://localhost:80

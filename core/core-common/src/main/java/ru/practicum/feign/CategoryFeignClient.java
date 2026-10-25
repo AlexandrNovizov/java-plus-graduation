@@ -11,7 +11,7 @@ import ru.practicum.dto.category.CategoryDto;
 import java.util.List;
 import java.util.Set;
 
-@FeignClient(name = "main-service")
+@FeignClient(name = "category-service")
 public interface CategoryFeignClient {
 
     @GetMapping("/categories/{categoryId}")
