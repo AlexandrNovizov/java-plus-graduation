@@ -8,7 +8,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.category.CategoriesParamDto;
 import ru.practicum.dto.category.CategoryDto;
-import ru.practicum.entity.CategoryService;
+import ru.practicum.service.CategoryService;
 
 import java.util.List;
 

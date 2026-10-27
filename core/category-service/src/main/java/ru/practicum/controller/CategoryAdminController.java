@@ -9,7 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.NewCategoryDto;
-import ru.practicum.entity.CategoryService;
+import ru.practicum.service.CategoryService;
 
 @RestController
 @RequestMapping(path = "/admin/categories")

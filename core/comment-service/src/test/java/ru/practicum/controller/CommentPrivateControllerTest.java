@@ -11,7 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.NewCommentDto;
 import ru.practicum.dto.comment.UpdateCommentDto;
-import ru.practicum.entity.CommentService;
+import ru.practicum.service.CommentService;
 
 import java.util.List;
 

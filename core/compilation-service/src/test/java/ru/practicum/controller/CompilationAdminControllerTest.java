@@ -16,7 +16,7 @@ import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.compilation.UpdateCompilationRequest;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.user.UserShortDto;
-import ru.practicum.entity.CompilationService;
+import ru.practicum.service.CompilationService;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
 

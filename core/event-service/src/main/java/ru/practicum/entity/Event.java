@@ -60,6 +60,9 @@ public class Event {
     @Column(nullable = false, length = 120)
     private String title;
 
+    @Column(nullable = false)
+    private Long views = 0L;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

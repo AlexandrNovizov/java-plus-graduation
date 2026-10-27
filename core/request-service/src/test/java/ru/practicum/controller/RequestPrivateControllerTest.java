@@ -7,7 +7,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.entity.RequestService;
+import ru.practicum.service.RequestService;
 
 import java.util.List;
 

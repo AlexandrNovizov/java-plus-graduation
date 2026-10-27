@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.comment.UserCommentAdminDto;
-import ru.practicum.entity.CommentService;
+import ru.practicum.service.CommentService;
 
 @RestController
 @RequestMapping("/admin/comments")

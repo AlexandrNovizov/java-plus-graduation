@@ -10,7 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.comment.CommentDto;
-import ru.practicum.entity.CommentService;
+import ru.practicum.service.CommentService;
 
 import java.util.List;
 

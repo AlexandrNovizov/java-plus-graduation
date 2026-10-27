@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.enums.request.RequestStatus;
-import ru.practicum.entity.RequestService;
+import ru.practicum.service.RequestService;
 
 import java.util.List;
 import java.util.Set;

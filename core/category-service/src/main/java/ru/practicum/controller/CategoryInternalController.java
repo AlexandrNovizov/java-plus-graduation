@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.category.CategoryDto;
-import ru.practicum.entity.CategoryService;
+import ru.practicum.service.CategoryService;
 
 import java.util.List;
 import java.util.Set;

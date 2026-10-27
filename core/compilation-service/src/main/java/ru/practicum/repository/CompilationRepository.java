@@ -1,0 +1,26 @@
+package ru.practicum.repository;
+
+import lombok.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import com.querydsl.core.types.Predicate;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
+import ru.practicum.entity.Compilation;
+
+import java.util.Optional;
+
+
+public interface CompilationRepository extends JpaRepository<Compilation, Long>,
+        QuerydslPredicateExecutor<Compilation> {
+
+    boolean existsByTitle(String title);
+
+    @NonNull
+    Page<Compilation> findAll(@NonNull Pageable pageable);
+
+    @NonNull
+    Page<Compilation> findAll(@NonNull Predicate predicate, @NonNull Pageable pageable);
+
+    Optional<Compilation> findWithEventsById(Long id);
+}

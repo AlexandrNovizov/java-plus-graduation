@@ -9,7 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.NewCategoryDto;
-import ru.practicum.entity.CategoryService;
+import ru.practicum.service.CategoryService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;

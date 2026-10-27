@@ -9,10 +9,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.controller.EventPrivateController;
 import ru.practicum.dto.event.*;
 import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.entity.EventService;
+import ru.practicum.service.EventService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

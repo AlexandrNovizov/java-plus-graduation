@@ -1,7 +1,58 @@
 services:
+  discovery-server:
+    build: infra/discovery-server
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: "curl --fail --silent discovery-server:8761/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  config-server:
+    build: infra/config-server
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    volumes:
+      - ./infra/config-repo:/config-repo:ro
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8888
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config-repo/core,file:/config-repo/stat,file:/config-repo
+    healthcheck:
+      test: "curl --fail --silent config-server:8888/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  user-service:
+    build: core/user-service
+    container_name: user-service
+    ports:
+      - "9091:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_users
+    healthcheck:
+      test: "curl --fail --silent user-server:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 20s
+      retries: 5
+
   ewm-db:
     image: postgres:16.1
-    container_name: postgres-ewm-db
+    container_name: ewm-db
     ports:
       - "7542:5432"
     environment:
