@@ -392,10 +392,6 @@ public class EventServiceImpl implements EventService {
             result.add(EventMapper.toEventShortDto(event, requestsCount, views, initiatorName, categoryName));
         }
 
-        if (SortBy.VIEWS == sort) {
-            result.sort(Comparator.comparing(EventShortDto::getViews).reversed());
-        }
-
         return result;
     }
 
