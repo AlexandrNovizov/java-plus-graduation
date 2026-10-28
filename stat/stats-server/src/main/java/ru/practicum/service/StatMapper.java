@@ -1,7 +1,7 @@
 package ru.practicum.service;
 
 import lombok.experimental.UtilityClass;
-import ru.practicum.EndpointHit;
+import ru.practicum.dto.stat.EndpointHit;
 import ru.practicum.exception.ValidationException;
 import ru.practicum.model.EndpointHitEntity;
 

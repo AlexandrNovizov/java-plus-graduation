@@ -1,41 +1,217 @@
 services:
+  discovery-server:
+    build: infra/discovery-server
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: "curl --fail --silent http://discovery-server:8761/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
+  config-server:
+    build: infra/config-server
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    volumes:
+      - ./infra/config-repo:/config-repo:ro
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8888
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config-repo/core,file:/config-repo/infra,file:/config-repo/stat,file:/config-repo
+    healthcheck:
+      test: "curl --fail --silent http://config-server:8888/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
+  user-service:
+    build: core/user-service
+    container_name: user-service
+    ports:
+      - "9091:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_users
+    healthcheck:
+      test: "curl --fail --silent user-service:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
+  request-service:
+    build: core/request-service
+    container_name: request-service
+    ports:
+      - "9092:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_requests
+    healthcheck:
+      test: "curl --fail --silent request-service:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
+  event-service:
+    build: core/event-service
+    container_name: event-service
+    ports:
+      - "9093:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_events
+    healthcheck:
+      test: "curl --fail --silent event-service:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
+  compilation-service:
+    build: core/compilation-service
+    container_name: compilation-service
+    ports:
+      - "9094:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_compilations
+    healthcheck:
+      test: "curl --fail --silent compilation-service:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
+  comment-service:
+    build: core/comment-service
+    container_name: comment-service
+    ports:
+      - "9095:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_comments
+    healthcheck:
+      test: "curl --fail --silent comment-service:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
+  category-service:
+    build: core/category-service
+    container_name: category-service
+    ports:
+      - "9096:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_categories
+    healthcheck:
+      test: "curl --fail --silent category-service:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
   stats-server:
-    build: stat/stat-server
-    container_name: stat-server
+    build: stat/stats-server
+    container_name: stats-server
     ports:
-      - "9090:9090"
+      - "9097:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/ewm-stats
-      - SPRING_DATASOURCE_USERNAME=stat
-      - SPRING_DATASOURCE_PASSWORD=stat
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_stats
+    healthcheck:
+      test: "curl --fail --silent stats-server:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
 
-  stats-db:
-    image: postgres:16.1
-    container_name: postgres-ewm-stats-db
-    ports:
-      - "6542:5432"
-    environment:
-      - POSTGRES_USER=stat
-      - POSTGRES_PASSWORD=stat
-      - POSTGRES_DB=ewm-stats
-
-  ewm-service:
-    build: ./main-service
-    container_name: main-service
+  gateway-server:
+    build: infra/gateway-server
+    container_name: gateway-server
     ports:
       - "8080:8080"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      request-service:
+        condition: service_healthy
+      event-service:
+        condition: service_healthy
+      compilation-service:
+        condition: service_healthy
+      comment-service:
+        condition: service_healthy
+      category-service:
+        condition: service_healthy
+      stats-server:
+        condition: service_healthy
     environment:
-      - CLIENT_URL=http://stats-server:9090
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
-      - SPRING_DATASOURCE_USERNAME=main
-      - SPRING_DATASOURCE_PASSWORD=main
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SERVER_PORT=8080
+    healthcheck:
+      test: "curl --fail --silent gateway-server:8080/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
 
   ewm-db:
     image: postgres:16.1
-    container_name: postgres-ewm-main-db
+    container_name: ewm-db
     ports:
       - "7542:5432"
     environment:
       - POSTGRES_USER=main
       - POSTGRES_PASSWORD=main
-      - POSTGRES_DB=ewm-main
+      - POSTGRES_DB=ewm_main
+    volumes:
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 15s
+      retries: 10

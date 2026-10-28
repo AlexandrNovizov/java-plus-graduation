@@ -7,8 +7,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.EndpointHit;
-import ru.practicum.ParamDto;
+import ru.practicum.dto.stat.EndpointHit;
+import ru.practicum.dto.stat.ParamDto;
 import ru.practicum.service.StatService;
 
 import java.util.List;

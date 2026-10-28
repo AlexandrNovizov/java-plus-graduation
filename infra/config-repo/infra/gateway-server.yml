@@ -14,10 +14,79 @@ spring:
         locator:
           enabled: false
       routes:
-        - id: admin-read
-          uri: lb://main-service
+        - id: comments-read
+          uri: lb://comment-service
           predicates:
-            - Path=/admin/users,/admin/events
+            - Method=GET
+            - Path=/comments/**,/users/{userId}/comments/**,/admin/comments/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                methods:
+                  - GET
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
+        - id: comments-change
+          uri: lb://comment-service
+          predicates:
+            - Path=/comments/**,/users/{userId}/comments/**,/admin/comments/**
+
+        - id: events-read
+          uri: lb://event-service
+          predicates:
+            - Method=GET
+            - Path=/admin/events/**,/users/{userId}/events/**,/events/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                methods:
+                  - GET
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
+        - id: events-change
+          uri: lb://event-service
+          predicates:
+            - Path=/admin/events/**,/users/{userId}/events/**,/events/**
+
+        - id: requests-read
+          uri: lb://request-service
+          predicates:
+            - Method=GET
+            - Path=/users/{userId}/requests/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                methods:
+                  - GET
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 500ms
+        - id: requests-change
+          uri: lb://request-service
+          predicates:
+            Path=/users/{userId}/requests/**
+
+        - id: users-read
+          uri: lb://user-service
+          predicates:
+            - Path=/admin/users/**
             - Method=GET
           filters:
             - name: Retry
@@ -32,14 +101,15 @@ spring:
                 backoff:
                   firstBackoff: 100ms
                   maxBackoff: 500ms
-        - id: admin-change
-          uri: lb://main-service
+        - id: users-change
+          uri: lb://user-service
           predicates:
-            - Path=/admin/**
-        - id: private-read
-          uri: lb://main-service
+            - Path=/admin/users/**
+
+        - id: compilation-read
+          uri: lb://compilation-service
           predicates:
-            - Path=/users/{userId}/comments,/users/{userId}/events/**,/users/{userId}/requests
+            - Path=/compilations/**
             - Method=GET
           filters:
             - name: Retry
@@ -54,14 +124,15 @@ spring:
                 backoff:
                   firstBackoff: 100ms
                   maxBackoff: 500ms
-        - id: private-change
-          uri: lb://main-service
+        - id: compilation-change
+          uri: lb://compilation-service
           predicates:
-            - Path=/users/{userId}/**
-        - id: public-read
-          uri: lb://main-service
+            - Path=/admin/compilations/**
+
+        - id: category-read
+          uri: lb://category-service
           predicates:
-            - Path=/categories/**,/comments/**,/compilations/**,/events/**
+            - Path=/categories/**
             - Method=GET
           filters:
             - name: Retry
@@ -76,3 +147,7 @@ spring:
                 backoff:
                   firstBackoff: 100ms
                   maxBackoff: 500ms
+        - id: category-change
+          uri: lb://category-service
+          predicates:
+            - Path=/admin/categories/**
