@@ -1,11 +1,6 @@
-package ru.practicum.exception;
+package ru.practicum.feign.exception;
 
 public class StatsServerUnavailable extends RuntimeException {
-
-    public StatsServerUnavailable(String message) {
-        super(message);
-    }
-
     public StatsServerUnavailable(String message, Throwable cause) {
         super(message, cause);
     }

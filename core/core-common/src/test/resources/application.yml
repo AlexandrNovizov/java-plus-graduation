@@ -12,6 +12,8 @@ spring:
               - uri: http://localhost:80
             event-service:
               - uri: http://localhost:80
+            stats-server:
+              - uri: http://localhost:80
     loadbalancer:
       blocking:
         enabled: true

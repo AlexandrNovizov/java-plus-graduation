@@ -3,7 +3,7 @@ package ru.practicum.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import ru.practicum.ViewStats;
+import ru.practicum.dto.stat.ViewStats;
 import ru.practicum.model.EndpointHitEntity;
 
 import java.time.LocalDateTime;
@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface StatRepository extends JpaRepository<EndpointHitEntity, Long> {
 
-    @Query("select new ru.practicum.ViewStats(h.app, h.uri, count(h)) " +
+    @Query("select new ru.practicum.dto.stat.ViewStats(h.app, h.uri, count(h)) " +
             "from EndpointHitEntity h " +
             "where h.uri in :uris " +
             "and h.timestamp >= :start and h.timestamp <= :end " +
@@ -22,7 +22,7 @@ public interface StatRepository extends JpaRepository<EndpointHitEntity, Long> {
                                        @Param("start") LocalDateTime start,
                                        @Param("end") LocalDateTime end);
 
-    @Query("select new ru.practicum.ViewStats(h.app, h.uri, count(distinct h.ip)) " +
+    @Query("select new ru.practicum.dto.stat.ViewStats(h.app, h.uri, count(distinct h.ip)) " +
             "from EndpointHitEntity h " +
             "where h.uri in :uris " +
             "and h.timestamp >= :start and h.timestamp <= :end " +
@@ -34,7 +34,7 @@ public interface StatRepository extends JpaRepository<EndpointHitEntity, Long> {
                                              @Param("end") LocalDateTime end);
 
 
-    @Query("select new ru.practicum.ViewStats(h.app, h.uri, count(h)) " +
+    @Query("select new ru.practicum.dto.stat.ViewStats(h.app, h.uri, count(h)) " +
             "from EndpointHitEntity h " +
             "where h.timestamp >= :start and h.timestamp <= :end " +
             "group by h.app, h.uri " +
@@ -42,7 +42,7 @@ public interface StatRepository extends JpaRepository<EndpointHitEntity, Long> {
     List<ViewStats> getAllViewStats(@Param("start") LocalDateTime start,
                                     @Param("end") LocalDateTime end);
 
-    @Query("select new ru.practicum.ViewStats(h.app, h.uri, count(distinct h.ip)) " +
+    @Query("select new ru.practicum.dto.stat.ViewStats(h.app, h.uri, count(distinct h.ip)) " +
             "from EndpointHitEntity h " +
             "where h.timestamp >= :start and h.timestamp <= :end " +
             "group by h.app, h.uri " +

@@ -15,6 +15,9 @@ import ru.practicum.*;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.event.*;
 import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.dto.stat.EndpointHit;
+import ru.practicum.dto.stat.StatsRequest;
+import ru.practicum.dto.stat.ViewStats;
 import ru.practicum.dto.user.UserDto;
 import ru.practicum.dto.user.UserFullDto;
 import ru.practicum.dto.user.UserParamDto;
@@ -32,6 +35,7 @@ import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
 import ru.practicum.feign.CategoryFeignClient;
 import ru.practicum.feign.RequestFeignClient;
+import ru.practicum.feign.StatFeignClient;
 import ru.practicum.feign.UserFeignClient;
 
 import ru.practicum.repository.EventRepository;
@@ -51,7 +55,7 @@ import static ru.practicum.dto.mapper.EventMapper.toLogEvent;
 @Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
 
-    private final StatClient statClient;
+    private final StatFeignClient statClient;
     private final EventRepository eventRepository;
     private final CategoryFeignClient categoryClient;
     private final RequestFeignClient requestClient;

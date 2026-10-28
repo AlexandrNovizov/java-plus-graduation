@@ -10,10 +10,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import ru.practicum.entity.Event;
 import ru.practicum.entity.Location;
+import ru.practicum.feign.StatFeignClient;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.feign.CategoryFeignClient;
 import ru.practicum.feign.RequestFeignClient;
-import ru.practicum.StatClient;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.event.*;
 import ru.practicum.dto.user.UserFullDto;
@@ -45,7 +45,7 @@ class EventServiceImplTest {
     @Mock
     private UserFeignClient userClient;
     @Mock
-    private StatClient statClient;
+    private StatFeignClient statClient;
 
     @Mock
     private RequestFeignClient requestClient;

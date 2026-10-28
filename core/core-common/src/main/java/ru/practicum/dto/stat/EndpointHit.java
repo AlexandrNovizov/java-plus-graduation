@@ -1,4 +1,4 @@
-package ru.practicum;
+package ru.practicum.dto.stat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;

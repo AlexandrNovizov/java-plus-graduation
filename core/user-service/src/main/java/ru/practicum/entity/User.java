@@ -26,8 +26,6 @@ public class User {
     @Column(nullable = false)
     private String name;
 
-    //TODO: убрать данные в comments-service
-
     @Enumerated(EnumType.STRING)
     private CommentsRank rank;
 

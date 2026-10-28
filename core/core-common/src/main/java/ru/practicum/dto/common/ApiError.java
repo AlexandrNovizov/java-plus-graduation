@@ -1,4 +1,4 @@
-package ru.practicum;
+package ru.practicum.dto.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

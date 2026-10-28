@@ -1,53 +1,62 @@
-package ru.practicum;
+package ru.practicum.feign;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.openfeign.EnableFeignClients;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import ru.practicum.feign.FeignStatClient;
+import ru.practicum.dto.stat.EndpointHit;
+import ru.practicum.dto.stat.StatsRequest;
+import ru.practicum.dto.stat.ViewStats;
 
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 
-@SpringBootTest(classes = StatClientTest.TestConfig.class)
+@SpringBootTest(classes = StatFeignClientTest.TestConfig.class)
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
-class StatClientTest {
+public class StatFeignClientTest {
 
     @SpringBootApplication
-    @EnableFeignClients(clients = FeignStatClient.class)
-    @Import({WireMockConfig.class})
+    @EnableFeignClients(clients = StatFeignClient.class)
     static class TestConfig {
     }
 
-    @Autowired
-    private WireMockServer wireMockServer;
+    private static WireMockServer wireMockServer;
 
     @Autowired
-    private StatClient statClient;
+    private StatFeignClient feignClient;
 
     @Autowired
     private ObjectMapper objectMapper;
 
+    @BeforeAll
+    public static void init() {
+        wireMockServer = new WireMockServer(80);
+        wireMockServer.start();
+    }
+
     @BeforeEach
     public void setUp() {
         wireMockServer.resetAll();
+    }
+
+    @AfterAll
+    public static void cleanUp() {
+        wireMockServer.stop();
     }
 
     @Test
@@ -68,7 +77,7 @@ class StatClientTest {
                 ))
                 .willReturn(aResponse().withStatus(201)));
 
-        statClient.hit(endpointHit);
+        feignClient.hit(endpointHit);
 
         wireMockServer.verify(postRequestedFor(urlEqualTo("/hit")));
     }
@@ -98,7 +107,7 @@ class StatClientTest {
                         .withBody(objectMapper.writeValueAsString(expectedStats))
                 ));
 
-        List<ViewStats> response = statClient.getViewStats(request);
+        List<ViewStats> response = feignClient.getViewStats(request);
 
         wireMockServer.verify(
                 getRequestedFor(urlPathEqualTo("/stats"))
@@ -112,25 +121,5 @@ class StatClientTest {
         assertThat(response.getFirst().getApp(), equalTo("ewm-main"));
         assertThat(response.getFirst().getApp(), equalTo("ewm-main"));
         assertThat(response.getFirst().getHits(), equalTo(5L));
-    }
-
-    @Test
-    @DisplayName("Вернуть пустой список в случае срабатывания исключения.")
-    void getViewStats_shouldReturnEmptyListWhenExceptionIsThrown() {
-        StatsRequest request = new StatsRequest(
-                "2020-05-05 00:00:00",
-                "2035-05-05 00:00:00",
-                List.of("/events/1"),
-                true
-        );
-
-        wireMockServer.stubFor(get(urlPathEqualTo("/stats"))
-                .willReturn(aResponse().withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())));
-
-        List<ViewStats> response = statClient.getViewStats(request);
-
-        assertThat(response, empty());
-
-        wireMockServer.verify(1, getRequestedFor(urlPathEqualTo("/stats")));
     }
 }
