@@ -1,0 +1,13 @@
+kafka:
+  properties:
+    "key.serializer": "org.apache.kafka.common.serialization.StringSerializer"
+    "value.serializer": "ru.practicum.kafka.MessageSerializer"
+
+  topics:
+    "user.action": "${USER_ACTION_TOPIC:stats.user-actions.v1}"
+
+  bootstrapServers: "${KAFKA_SERVERS:localhost:9092}"
+
+grpc:
+  server:
+    port: 0
