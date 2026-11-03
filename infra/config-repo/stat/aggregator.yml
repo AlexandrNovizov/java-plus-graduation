@@ -1,0 +1,18 @@
+kafka:
+  producer:
+    "key.serializer": "org.apache.kafka.common.serialization.StringSerializer"
+    "value.serializer": "ru.practicum.kafka.MessageSerializer"
+  consumer:
+    "key.deserializer": "org.apache.kafka.common.serialization.StringDeserializer"
+    "value.deserializer": "ru.practicum.kafka.UserActionDeserializer"
+    "group.id": 'aggregator-1'
+    "enable.auto.commit": "false"
+    "poll-timeout": "100ms"
+  topics:
+    "user.action": '${USER_ACTION_TOPIC:stats.user-actions.v1}'
+    "event.similarity": '${EVENT_SIMILARITY_TOPIC:stats.events-similarity.v1}'
+  bootstrapServers: "${KAFKA_SERVERS:localhost:9092}"
+
+grpc:
+  server:
+    port: 0

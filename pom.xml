@@ -16,7 +16,8 @@
 		<module>infra</module>
 		<module>core</module>
 		<module>stat/serialization/proto-schemas</module>
-	</modules>
+        <module>stat/aggregator</module>
+    </modules>
 
 	<groupId>ru.practicum</groupId>
 	<artifactId>explore-with-me</artifactId>
