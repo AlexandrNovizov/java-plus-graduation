@@ -53,7 +53,7 @@ public class EventMapper {
 
     public static EventFullDto toEventFullDto(Event event,
                                               Long confirmedRequests,
-                                              Long views,
+                                              Double rating,
                                               String initiatorName,
                                               String categoryName) {
         return EventFullDto.builder()
@@ -74,13 +74,13 @@ public class EventMapper {
                         : event.getPublishedOn().format(FORMATTER))
                 .state(event.getState().name())
                 .title(event.getTitle())
-                .views(views)
+                .rating(rating)
                 .build();
     }
 
     public static EventShortDto toEventShortDto(Event event,
                                                 Long confirmedRequests,
-                                                Long views,
+                                                Double rating,
                                                 String initiatorName,
                                                 String categoryName) {
         return EventShortDto.builder()
@@ -92,13 +92,13 @@ public class EventMapper {
                 .initiator(new UserShortDto(event.getInitiatorId(), initiatorName))
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(views)
+                .rating(rating)
                 .build();
     }
 
     public static List<EventShortDto> toEventShortDto(List<Event> events,
                                                       Map<Long, Long> confirmedRequests,
-                                                      Map<Long, Long> views,
+                                                      Map<Long, Double> ratings,
                                                       Map<Long, String> initiatorNames,
                                                       Map<Long, String> categoryNames) {
         return events.stream()
@@ -112,7 +112,7 @@ public class EventMapper {
                                 .initiator(new UserShortDto(event.getInitiatorId(), initiatorNames.get(event.getInitiatorId())))
                                 .paid(event.getPaid())
                                 .title(event.getTitle())
-                                .views(views.getOrDefault(event.getId(), 0L))
+                                .rating(ratings.getOrDefault(event.getId(), 0.0))
                                 .build()
                 )
                 .toList();

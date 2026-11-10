@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.CollectorClient;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
@@ -16,6 +17,7 @@ import ru.practicum.feign.EventFeignClient;
 import ru.practicum.feign.UserFeignClient;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.grpc.ActionTypeProto;
 import ru.practicum.repository.RequestRepository;
 
 import java.util.Collections;
@@ -33,6 +35,7 @@ public class RequestServiceImpl implements RequestService {
     private final RequestRepository requestRepository;
     private final EventFeignClient eventClient;
     private final UserFeignClient userClient;
+    private final CollectorClient collectorClient;
 
     @Override
     @Transactional
@@ -47,6 +50,8 @@ public class RequestServiceImpl implements RequestService {
 
         Request request = RequestMapper.toRequest(event, user.getId());
         request = requestRepository.save(request);
+
+        collectorClient.collectUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
 
         var requestDto = RequestMapper.toRequestDto(request);
         log.info("Новая заявка на событие: {}", requestDto);

@@ -15,154 +15,95 @@ import java.util.*;
 @RequiredArgsConstructor
 public class SimilarityCalcServiceImpl implements SimilarityCalcService {
 
-    private final Map<Long, Map<Long, Double>> userActionsMap = new TreeMap<>();
-    private final Map<Long, Double> eventWeightSumMap = new HashMap<>();
-    private final TreeMap<Long, Map<Long, Double>> eventsMinWeightSumMap = new TreeMap<>();
-
     private static final double ZERO = 0.0;
+
+    // eventId -> (userId, weight)
+    private final Map<Long, Map<Long, Double>> userActionsMap = new HashMap<>();
+    // S_a: общая сумма весов по мероприятию
+    private final Map<Long, Double> eventWeightSumMap = new HashMap<>();
+    // меньший id -> (больший id -> S_min(A, B): сумма минимальных весов по общим пользователям)
+    private final Map<Long, Map<Long, Double>> eventsMinWeightSumMap = new HashMap<>();
 
     @Override
     public List<EventSimilarityAvro> processUserAction(UserActionAvro action) {
+        double newWeight = getWeight(action.getActionType());
+        long eventId = action.getEventId();
 
-        Double newWeight = getWeight(action.getActionType());
+        Map<Long, Double> userWeights = userActionsMap.computeIfAbsent(eventId, k -> new HashMap<>());
+        long userId = action.getUserId();
+        double oldWeight = userWeights.getOrDefault(userId, ZERO);
 
-        Long eventId = action.getEventId();
+        log.info("Проверка весов");
 
-        Map<Long, Double> userWeightsMap = userActionsMap.computeIfAbsent(eventId, k -> new HashMap<>());
-        Double oldWeight = userWeightsMap.getOrDefault(action.getUserId(), ZERO);
-
-        if (oldWeight > newWeight) {
+        if (oldWeight >= newWeight) {
+            log.info("{} >= {}, пересчета не требуется", oldWeight, newWeight);
             return List.of();
         }
-        userWeightsMap.put(action.getUserId(), newWeight);
-        eventWeightSumMap.putIfAbsent(eventId, newWeight);
 
-        if (Double.compare(ZERO, oldWeight) == 0) {
-            return computeSimilarity(eventId);
-        } else {
-            return updateSimilarity(eventId, oldWeight, newWeight);
-        }
-    }
+        log.info("{} < {}, пересчет запущен", oldWeight, newWeight);
 
-    private List<EventSimilarityAvro> updateSimilarity(Long eventId, Double oldWeight, Double newWeight) {
-        double delta = newWeight - oldWeight;
-        eventWeightSumMap.computeIfPresent(eventId, (k, v) -> v + delta);
-        NavigableMap<Long, Map<Long, Double>> lessIdsMap = eventsMinWeightSumMap.headMap(eventId, false);
-
-        Set<Long> idsToUpdateSimilarity = new HashSet<>();
+        userWeights.put(userId, newWeight);
+        // обновляем S_a
+        log.debug("Обновляем сумму весов для события id={}", eventId);
+        var delta = newWeight - oldWeight;
+        log.debug("Старое: {}, Дельта: {}, Новое: {}", eventWeightSumMap.get(eventId), delta, eventWeightSumMap.getOrDefault(eventId, ZERO) + delta);
+        eventWeightSumMap.merge(eventId, delta, Double::sum);
 
         List<EventSimilarityAvro> result = new ArrayList<>();
 
-        for (Map.Entry<Long, Map<Long, Double>> entry : lessIdsMap.entrySet()) {
-
-            Map<Long, Double> minSumMap = entry.getValue();
-            if (minSumMap.containsKey(eventId)) {
-                minSumMap.compute(eventId, (k, v) -> v + delta);
-                idsToUpdateSimilarity.add(entry.getKey());
-            }
-        }
-
-        Map<Long, Double> greaterIdsMap = eventsMinWeightSumMap.get(eventId);
-        if (greaterIdsMap != null) {
-            List<Long> idsToPutNewWeight = new ArrayList<>();
-            for (Map.Entry<Long, Double> entry : greaterIdsMap.entrySet()) {
-                if (entry.getValue() < newWeight) {
-                    idsToPutNewWeight.add(entry.getKey());
-                }
-            }
-
-            for (Long id : idsToPutNewWeight) {
-                greaterIdsMap.compute(id, (k, v) -> v + delta);
-            }
-            idsToUpdateSimilarity.addAll(idsToPutNewWeight);
-        }
-
-        for (Long id : idsToUpdateSimilarity) {
-
-            long eventA = Long.min(eventId, id);
-            long eventB = Long.max(eventId, id);
-
-            double minWeightSum = eventsMinWeightSumMap.get(eventA).get(eventB);
-
-            double aSum = getOrCalculateEventWeightSum(eventA);
-            double bSum = getOrCalculateEventWeightSum(eventB);
-
-            EventSimilarityAvro avro = EventSimilarityAvro.newBuilder()
-                    .setEventA(eventA)
-                    .setEventB(eventB)
-                    .setScore(similarity(minWeightSum, aSum, bSum))
-                    .setTimestamp(Instant.now())
-                    .build();
-
-            result.add(avro);
-        }
-
-        return result;
-    }
-
-    private List<EventSimilarityAvro> computeSimilarity(Long eventId) {
-
-        List<EventSimilarityAvro> result = new ArrayList<>();
         for (Map.Entry<Long, Map<Long, Double>> entry : userActionsMap.entrySet()) {
-            if (Objects.equals(entry.getKey(), eventId)) {
+            long otherId = entry.getKey();
+            if (otherId == eventId) {
                 continue;
             }
-            Set<Long> users = new HashSet<>(userActionsMap.get(eventId).keySet());
 
-            users.addAll(entry.getValue().keySet());
+            log.debug("Пересчет S(min(A, B)), eventId: {}, otherId: {}", eventId, otherId);
 
-            long eventA = Long.min(eventId, entry.getKey());
-            long eventB = Long.max(eventId, entry.getKey());
+            // обновляем S_min(eventId, otherId) точно: вклад меняет только текущий пользователь
+            double otherWeight = entry.getValue().getOrDefault(userId, ZERO);
 
-            Map<Long, Double> aActions = userActionsMap.get(eventA);
-            Map<Long, Double> bActions = userActionsMap.get(eventB);
-            Map<Long, Double> minWeightMap = eventsMinWeightSumMap.computeIfAbsent(eventA, k -> new HashMap<>());
-
-            double minWeightSum = users.stream()
-                    .map(user ->
-                            Double.min(aActions.getOrDefault(user, ZERO), bActions.getOrDefault(user, ZERO))
-                    )
-                    .filter(minAction -> Double.compare(ZERO, minAction) != 0)
-                    .mapToDouble(Double::doubleValue)
-                    .sum();
-
-            if (minWeightSum == 0) {
-                return List.of();
+            if (Double.compare(ZERO, otherWeight) == 0) {
+                log.info("Пользователь с id={} не взаимодействовал с event={}, расчет не требуется", userId, entry.getKey());
+                continue;
             }
-            minWeightMap.put(eventB, minWeightSum);
 
-            Double aSum = getOrCalculateEventWeightSum(eventA);
-            Double bSum = getOrCalculateEventWeightSum(eventB);
+            log.debug("Вес действия пользователя с другим событием: {}", otherWeight);
+            log.debug("deltaMin = Math.min({}, {}) - Math.min({}, {})", newWeight, otherWeight, oldWeight, otherWeight);
+            double deltaMin = Math.min(newWeight, otherWeight) - Math.min(oldWeight, otherWeight);
+            log.debug("Разница суммы минимальных весов = {}", deltaMin);
 
-            EventSimilarityAvro avro = EventSimilarityAvro.newBuilder()
+            long eventA = Math.min(eventId, otherId);
+            long eventB = Math.max(eventId, otherId);
+
+            double minWeightSum = eventsMinWeightSumMap
+                    .computeIfAbsent(eventA, k -> new HashMap<>())
+                    .merge(eventB, deltaMin, Double::sum);
+
+            log.debug("Сумма минимальных весов {}, {}: {}", eventA, eventB, minWeightSum);
+
+
+            EventSimilarityAvro message = EventSimilarityAvro.newBuilder()
                     .setEventA(eventA)
                     .setEventB(eventB)
-                    .setScore(similarity(minWeightSum, aSum, bSum))
-                    .setTimestamp(Instant.now())
+                    .setScore(similarity(minWeightSum, eventWeightSumMap.get(eventA), eventWeightSumMap.get(eventB)))
+                    .setTimestamp(action.getTimestamp())
                     .build();
 
-            result.add(avro);
+            result.add(message);
         }
 
         return result;
     }
 
-    private Double getOrCalculateEventWeightSum(long eventId) {
-        Double result = eventWeightSumMap.get(eventId);
-        if (result == null) {
-            result = userActionsMap.get(eventId).values().stream()
-                    .mapToDouble(Double::doubleValue)
-                    .sum();
-        }
-        return result;
+    private double similarity(double minWeightSum, double aSum, double bSum) {
+        log.debug("Расчет similarity");
+        log.debug("Сумма min весов: {}, Сумма весов A: {}, Сумма весов B: {}", minWeightSum, aSum, bSum);
+        double similarity = minWeightSum / (Math.sqrt(aSum) * Math.sqrt(bSum));
+        log.debug("similarity = {}", similarity);
+        return similarity;
     }
 
-    private Double similarity(double minWeightSum, double aSum, double bSum) {
-        double denominator = Math.sqrt(aSum) * Math.sqrt(bSum);
-        return minWeightSum / denominator;
-    }
-
-    private Double getWeight(ActionTypeAvro actionType) {
+    private double getWeight(ActionTypeAvro actionType) {
         switch (actionType) {
             case VIEW:
                 return 0.4;
@@ -170,9 +111,9 @@ public class SimilarityCalcServiceImpl implements SimilarityCalcService {
                 return 0.8;
             case LIKE:
                 return 1.0;
-            case null, default:
-                throw new IllegalArgumentException("Can't find weight conversion for " +
-                        (actionType == null ? null : actionType.name()));
+            default:
+                throw new IllegalArgumentException(
+                    "Can't find weight conversion for " + actionType);
         }
     }
 }

@@ -8,9 +8,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import ru.practicum.RecommendationClient;
 import ru.practicum.entity.Event;
 import ru.practicum.entity.Location;
-import ru.practicum.feign.StatFeignClient;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.feign.CategoryFeignClient;
 import ru.practicum.feign.RequestFeignClient;
@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,7 +46,7 @@ class EventServiceImplTest {
     @Mock
     private UserFeignClient userClient;
     @Mock
-    private StatFeignClient statClient;
+    private RecommendationClient recommendationClient;
 
     @Mock
     private RequestFeignClient requestClient;
@@ -77,12 +78,12 @@ class EventServiceImplTest {
 
         when(eventRepository.findAll(any(Predicate.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(event)));
-        when(statClient.getViewStats(any())).thenReturn(Collections.emptyList());
+        when(recommendationClient.getInteractionsCount(any())).thenReturn(Stream.of());
 
         List<EventFullDto> result = eventService.getEventsByAdmin(params);
 
         assertEquals(1, result.size());
-        verify(statClient).getViewStats(any());
+        verify(recommendationClient).getInteractionsCount(any());
     }
 
     @Test
@@ -107,7 +108,7 @@ class EventServiceImplTest {
 
 
         when(eventRepository.findWithRelationsById(1L)).thenReturn(Optional.of(event));
-        when(statClient.getViewStats(any())).thenReturn(Collections.emptyList());
+        when(recommendationClient.getInteractionsCount(any())).thenReturn(Stream.of());
         when(userClient.findById(anyLong())).thenReturn(initiator);
         when(requestClient.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED))
                 .thenReturn(new EventRequestsCountDto(event.getId(), 1L));
@@ -149,7 +150,29 @@ class EventServiceImplTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> eventService.getPublishedEventById(999L, null));
+                () -> eventService.getPublishedEventById(999L, 998L, null));
+    }
+
+    @Test
+    void getPublishedEventById_userNotFound_shouldThrowNotFoundException() {
+        long categoryId = 3L;
+        long initiatorId = 2L;
+        long userId = 4L;
+
+        Event event = Event.builder()
+                .id(1L)
+                .state(EventState.PUBLISHED)
+                .eventDate(LocalDateTime.now().plusDays(1))
+                .categoryId(categoryId)
+                .initiatorId(initiatorId)
+                .build();
+
+        when(userClient.findById(initiatorId)).thenThrow(NotFoundException.class);
+        when(eventRepository.findByIdAndState(1L, EventState.PUBLISHED))
+                .thenReturn(Optional.of(event));
+
+        assertThrows(NotFoundException.class,
+                () -> eventService.getPublishedEventById(1L, userId, null));
     }
 
     @Test
@@ -183,4 +206,6 @@ class EventServiceImplTest {
         assertEquals("PENDING", result.getState());
         verify(eventRepository).save(any());
     }
+
+    // TODO: tests on recommendations and like
 }

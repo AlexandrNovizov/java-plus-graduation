@@ -16,6 +16,8 @@
         <module>stats-server</module>
         <module>collector</module>
         <module>serialization</module>
+        <module>analyzer</module>
+        <module>stat-client</module>
     </modules>
 
     <properties>

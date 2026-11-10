@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum SortBy {
-    EVENT_DATE("eventDate"), VIEWS("views");
+    EVENT_DATE("eventDate"), RATING("rating");
 
     private final String databaseRowName;
 }

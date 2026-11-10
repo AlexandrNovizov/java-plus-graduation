@@ -30,6 +30,8 @@ class EventPublicControllerTest {
     private EventShortDto shortDto;
     private EventFullDto fullDto;
 
+    private final static String USER_ID_HEADER = "X-EWM-USER-ID";
+
     @BeforeEach
     void setUp() {
         shortDto = EventShortDto.builder()
@@ -62,21 +64,32 @@ class EventPublicControllerTest {
 
     @Test
     void getEventById_shouldReturnEvent() throws Exception {
-        when(eventService.getPublishedEventById(eq(1L), any(HttpServletRequest.class)))
+        when(eventService.getPublishedEventById(eq(1L), eq(2L), any(HttpServletRequest.class)))
                 .thenReturn(fullDto);
 
-        mvc.perform(get("/events/1"))
+        mvc.perform(get("/events/1")
+                        .header(USER_ID_HEADER, "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.title").value("Title"));
 
         verify(eventService)
-                .getPublishedEventById(eq(1L), any(HttpServletRequest.class));
+                .getPublishedEventById(eq(1L), eq(2L), any(HttpServletRequest.class));
     }
 
     @Test
     void getEventById_whenIdIsNegative_shouldReturn400() throws Exception {
-        mvc.perform(get("/events/-1"))
+        mvc.perform(get("/events/-1")
+                .header(USER_ID_HEADER, "1"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void getEventById_whenUserIdIsNegative_shouldReturn400() throws Exception {
+        mvc.perform(get("/events/1")
+                        .header(USER_ID_HEADER, "-1"))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(eventService);
@@ -96,6 +109,72 @@ class EventPublicControllerTest {
     void getEvents_whenTextEmpty_shouldReturn400() throws Exception {
         mvc.perform(get("/events")
                         .param("text", ""))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void getRecommendations_shouldReturnRecommendations() throws Exception {
+        mvc.perform(get("/events/recommendations")
+                    .header(USER_ID_HEADER, "1")
+                    .param("limit", "5"))
+                .andExpect(status().isOk());
+
+        verify(eventService).getRecommendations(eq(1L), eq(5));
+    }
+
+    @Test
+    void getRecommendations_whenLimitNotProvided_shouldUseDefaultValue() throws Exception {
+        mvc.perform(get("/events/recommendations")
+                        .header(USER_ID_HEADER, "1"))
+                .andExpect(status().isOk());
+
+        verify(eventService).getRecommendations(eq(1L), eq(10));
+    }
+
+    @Test
+    void getRecommendations_whenUserIdIsNegative_shouldReturn400() throws Exception {
+        mvc.perform(get("/events/recommendations")
+                        .header(USER_ID_HEADER, "-1")
+                        .param("limit", "5"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void getRecommendations_whenLimitIsNegative_shouldReturn400() throws Exception {
+        mvc.perform(get("/events/recommendations")
+                        .header(USER_ID_HEADER, "1")
+                        .param("limit", "-5"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void likeEvent_shouldLike() throws Exception {
+        mvc.perform(put("/events/1/like")
+                    .header(USER_ID_HEADER, "2"))
+                .andExpect(status().isOk());
+
+        verify(eventService).likeEvent(eq(1L), eq(2L));
+    }
+
+    @Test
+    void likeEvent_whenEventIdIsNegative_shouldReturn400() throws Exception {
+        mvc.perform(put("/events/-1/like")
+                        .header(USER_ID_HEADER, "2"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void likeEvent_whenUserIdIsNegative_shouldReturn400() throws Exception {
+        mvc.perform(put("/events/1/like")
+                        .header(USER_ID_HEADER, "-2"))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(eventService);

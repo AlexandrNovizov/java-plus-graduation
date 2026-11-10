@@ -45,7 +45,7 @@ class CompilationMapperTest {
                 .initiator(initiator)
                 .eventDate(LocalDateTime.now().format(FORMATTER))
                 .paid(false)
-                .views(15L)
+                .rating(.76)
                 .confirmedRequests(7L)
                 .build();
 
@@ -74,7 +74,7 @@ class CompilationMapperTest {
         assertEquals(1, dto.getEvents().size());
 
         EventShortDto eventDto = dto.getEvents().iterator().next();
-        assertEquals(event.getViews(), eventDto.getViews());
+        assertEquals(event.getRating(), eventDto.getRating());
         assertEquals(event.getConfirmedRequests(), eventDto.getConfirmedRequests());
     }
 

@@ -20,14 +20,14 @@ public class KafkaBeanConfig {
     private final KafkaConfig kafkaConfig;
 
     @Bean
-    public Producer<String, SpecificRecordBase> producer() {
+    public Producer<Long, SpecificRecordBase> producer() {
         Properties properties = kafkaConfig.getProducer();
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getBootstrapServers());
         return new KafkaProducer<>(properties);
     }
 
     @Bean
-    public Consumer<String, SpecificRecordBase> consumer() {
+    public Consumer<Long, SpecificRecordBase> consumer() {
         Properties properties = kafkaConfig.getConsumer();
         properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getBootstrapServers());
         return new KafkaConsumer<>(properties);

@@ -17,7 +17,7 @@ public class KafkaBeanConfig {
     private final KafkaConfig kafkaConfig;
 
     @Bean
-    public Producer<String, SpecificRecordBase> producer() {
+    public Producer<Long, SpecificRecordBase> producer() {
         Properties properties = kafkaConfig.getProperties();
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getBootstrapServers());
         return new KafkaProducer<>(properties);

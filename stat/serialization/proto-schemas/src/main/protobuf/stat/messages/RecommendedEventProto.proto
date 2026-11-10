@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package stat.proto;
+
+option java_multiple_files = true;
+option java_package = "ru.practicum.grpc";
+
+message RecommendedEventProto {
+  int64 event_id = 1;
+  double score = 2;
+}

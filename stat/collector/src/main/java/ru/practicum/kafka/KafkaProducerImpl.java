@@ -14,18 +14,18 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class KafkaProducerImpl implements KafkaProducer {
 
-    private final Producer<String, SpecificRecordBase> producer;
+    private final Producer<Long, SpecificRecordBase> producer;
     private final KafkaConfig kafkaConfig;
 
     private static final String USER_TOPIC = "user.action";
 
     @Override
     public void send(UserActionAvro userActionAvro) {
-        ProducerRecord<String, SpecificRecordBase> record = new ProducerRecord<>(
+        ProducerRecord<Long, SpecificRecordBase> record = new ProducerRecord<>(
                 kafkaConfig.getTopics().getProperty(USER_TOPIC),
                 null,
                 userActionAvro.getTimestamp().toEpochMilli(),
-                String.valueOf(userActionAvro.getUserId()),
+                userActionAvro.getUserId(),
                 userActionAvro
         );
         producer.send(record);

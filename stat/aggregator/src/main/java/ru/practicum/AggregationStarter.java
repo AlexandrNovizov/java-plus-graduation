@@ -25,14 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class AggregationStarter {
 
-    private final Producer<String, SpecificRecordBase> producer;
-    private final Consumer<String, SpecificRecordBase> consumer;
+    private final Producer<Long, SpecificRecordBase> producer;
+    private final Consumer<Long, SpecificRecordBase> consumer;
     private final KafkaConfig kafkaConfig;
     private final SimilarityCalcService similarityCalcService;
 
@@ -42,6 +43,7 @@ public class AggregationStarter {
     private static final String EVENT_SIMILARITY_TOPIC_KEY = "event.similarity";
     private final Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
 
+
     public void start() {
         try {
             consumer.subscribe(List.of(kafkaConfig.getTopics().getProperty(USER_ACTION_TOPIC_KEY)));
@@ -49,9 +51,10 @@ public class AggregationStarter {
             List<Future<RecordMetadata>> sentRecordsFutures = new ArrayList<>();
 
             while (true) {
-                ConsumerRecords<String, SpecificRecordBase> records = consumer.poll(POLL_TIMEOUT);
-                for (ConsumerRecord<String, SpecificRecordBase> record : records) {
+                ConsumerRecords<Long, SpecificRecordBase> records = consumer.poll(POLL_TIMEOUT);
+                for (ConsumerRecord<Long, SpecificRecordBase> record : records) {
                     UserActionAvro userAction = (UserActionAvro) record.value();
+                    log.info("received message: {}", userAction);
                     List<EventSimilarityAvro> calcSimilarityList = similarityCalcService.processUserAction(userAction);
                     offsets.put(
                             new TopicPartition(record.topic(), record.partition()),
@@ -60,23 +63,26 @@ public class AggregationStarter {
 
                     if (!calcSimilarityList.isEmpty()) {
                         for (EventSimilarityAvro avro : calcSimilarityList) {
-                            ProducerRecord<String, SpecificRecordBase> simRecord = new ProducerRecord<>(
+                            ProducerRecord<Long, SpecificRecordBase> simRecord = new ProducerRecord<>(
                                     kafkaConfig.getTopics().getProperty(EVENT_SIMILARITY_TOPIC_KEY),
                                     null,
                                     Instant.now().toEpochMilli(),
-                                    String.valueOf(avro.getEventA()),
+                                    null,
                                     avro
                             );
+                            log.info("Отправлено сообщение A:{} B:{} score:{}", avro.getEventA(), avro.getEventB(), avro.getScore());
                             sentRecordsFutures.add(producer.send(simRecord));
                         }
                     }
                 }
 
-                if (!records.isEmpty()) {
+                if (!sentRecordsFutures.isEmpty()) {
                     try {
+                        log.info("Ожидание {} сообщений", sentRecordsFutures.size());
                         for (Future<RecordMetadata> sentRecords : sentRecordsFutures) {
                             sentRecords.get();
                         }
+                        log.info("Сообщения доставлены");
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         throw new RuntimeException(e);
@@ -92,13 +98,15 @@ public class AggregationStarter {
                             }
                     );
                 }
+                sentRecordsFutures.clear();
+                offsets.clear();
             }
         } catch (WakeupException ignored) {
             log.info("Closing consumer");
             consumer.close(TIMEOUT);
 
         } catch (Exception e) {
-            log.error("Error while handling events from sensors: ", e);
+            log.error("Error while handling events from users: ", e);
         } finally {
             try {
                 log.info("Flushing data");

@@ -44,7 +44,7 @@ class CompilationAdminControllerTest {
     private final long eventId = 2L;
     private final long categoryId = 3L;
     private final long userId = 4L;
-    private final long views = 123L;
+    private final double rating = 0.65;
     private final String compTitle = "Compilation title";
     private final LocalDateTime eventDate = LocalDateTime.now();
 
@@ -82,7 +82,7 @@ class CompilationAdminControllerTest {
                 .category(category)
                 .eventDate(eventDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .paid(false)
-                .views(views)
+                .rating(rating)
                 .build();
 
         compilation = CompilationDto.builder()
