@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>avro-schemas</module>
+        <module>kafka-serialization</module>
     </modules>
 
     <properties>

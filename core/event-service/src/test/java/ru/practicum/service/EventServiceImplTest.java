@@ -206,6 +206,4 @@ class EventServiceImplTest {
         assertEquals("PENDING", result.getState());
         verify(eventRepository).save(any());
     }
-
-    // TODO: tests on recommendations and like
 }

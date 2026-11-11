@@ -1,4 +1,4 @@
-package ru.practicum.kafka;
+package ru.practicum.kafka.serialization;
 
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.EncoderFactory;

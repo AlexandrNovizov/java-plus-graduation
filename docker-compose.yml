@@ -152,26 +152,6 @@ services:
       interval: 15s
       retries: 10
 
-  stats-server:
-    build: stat/stats-server
-    container_name: stats-server
-    ports:
-      - "9097:8080"
-    depends_on:
-      config-server:
-        condition: service_healthy
-      ewm-db:
-        condition: service_healthy
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
-      - SERVER_PORT=8080
-      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_stats
-    healthcheck:
-      test: "curl --fail --silent stats-server:8080/actuator/health | grep UP || exit 1"
-      timeout: 5s
-      interval: 15s
-      retries: 10
-
   gateway-server:
     build: infra/gateway-server
     container_name: gateway-server
@@ -189,8 +169,6 @@ services:
       comment-service:
         condition: service_healthy
       category-service:
-        condition: service_healthy
-      stats-server:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
@@ -232,7 +210,6 @@ services:
                              --partitions 1 --replication-factor 1 --if-not-exists \
                              --bootstrap-server kafka:29092'"
     init: true
-
 
   collector:
     build: stat/collector

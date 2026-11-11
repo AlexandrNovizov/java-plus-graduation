@@ -1,4 +1,4 @@
-package ru.practicum.kafka;
+package ru.practicum.kafka.serialization;
 
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 

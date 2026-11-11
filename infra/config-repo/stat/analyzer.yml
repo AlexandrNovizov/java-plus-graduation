@@ -2,13 +2,13 @@ kafka:
   consumers:
     "[user.action]":
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: ru.practicum.kafka.UserActionDeserializer
+      value-deserializer: ru.practicum.kafka.serialization.UserActionDeserializer
       group-id: analyzer-1
       enable-auto-commit: false
       poll-timeout: 100ms
     "[event.similarity]":
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: ru.practicum.kafka.EventSimilarityDeserializer
+      value-deserializer: ru.practicum.kafka.serialization.EventSimilarityDeserializer
       group-id: analyzer-1
       enable-auto-commit: false
       poll-timeout: 100ms

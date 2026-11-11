@@ -1,10 +1,10 @@
 kafka:
   producer:
     "key.serializer": "org.apache.kafka.common.serialization.LongSerializer"
-    "value.serializer": "ru.practicum.kafka.MessageSerializer"
+    "value.serializer": "ru.practicum.kafka.serialization.MessageSerializer"
   consumer:
     "key.deserializer": "org.apache.kafka.common.serialization.LongDeserializer"
-    "value.deserializer": "ru.practicum.kafka.UserActionDeserializer"
+    "value.deserializer": "ru.practicum.kafka.serialization.UserActionDeserializer"
     "group.id": 'aggregator-1'
     "enable.auto.commit": "false"
     "poll-timeout": "100ms"
@@ -16,3 +16,6 @@ kafka:
 grpc:
   server:
     port: 0
+
+server:
+  port: 0
