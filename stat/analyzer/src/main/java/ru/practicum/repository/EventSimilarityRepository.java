@@ -13,10 +13,6 @@ import java.util.Set;
 
 public interface EventSimilarityRepository extends JpaRepository<EventSimilarity, EventSimilarityId> {
 
-//    @Query("SELECT * FROM EventSimilarity es" +
-//            "WHERE es.id.eventA = :eventId OR es.id.eventB = eventId")
-//    List<EventSimilarity> findAllByEventId(@Param("eventId") Long eventId);
-
     @Query("""
         SELECT NEW ru.practicum.view.EventSimilarityInfo(
             CASE 
