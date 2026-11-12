@@ -1,6 +1,5 @@
 package ru.practicum.repository;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,10 +42,10 @@ public interface EventSimilarityRepository extends JpaRepository<EventSimilarity
             es.score
             ) FROM EventSimilarity es
             WHERE es.id.eventA IN (:similarIds) AND es.id.eventB NOT IN (:knownIds) OR
-            es.id.eventA NOT IN (:knownIds) AND es.id.eventB IN (:similarIds)""")
+            es.id.eventA NOT IN (:knownIds) AND es.id.eventB IN (:similarIds) 
+            ORDER BY es.score DESC""")
     List<EventSimilarityInfo> findSimilarNotKnown(@Param("similarIds") Set<Long> similarIds,
-                                                  @Param("knownIds") Set<Long> knownIds,
-                                                  Pageable pageable);
+                                                  @Param("knownIds") Set<Long> knownIds);
 
     @Query("""
             SELECT NEW ru.practicum.view.EventSimilarityInfo(

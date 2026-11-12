@@ -2,9 +2,6 @@ package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.view.EventSimilarityInfo;
@@ -55,11 +52,8 @@ public class EventSimilarityServiceImpl implements EventSimilarityService {
     }
 
     @Override
-    public List<EventSimilarityInfo> findSimilarNotKnown(Set<Long> similarIds, Set<Long> knownIds, Integer maxResults) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "score");
-        Pageable pageable = PageRequest.of(0, maxResults, sort);
-
-        return repository.findSimilarNotKnown(similarIds, knownIds, pageable);
+    public List<EventSimilarityInfo> findSimilarNotKnown(Set<Long> similarIds, Set<Long> knownIds) {
+        return repository.findSimilarNotKnown(similarIds, knownIds);
     }
 
     @Override

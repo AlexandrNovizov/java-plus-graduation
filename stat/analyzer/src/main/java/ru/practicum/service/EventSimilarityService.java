@@ -12,7 +12,7 @@ public interface EventSimilarityService {
 
     List<EventSimilarityInfo> findAllByEventId(Long eventId);
 
-    List<EventSimilarityInfo> findSimilarNotKnown(Set<Long> similarIds, Set<Long> knownIds, Integer maxResults);
+    List<EventSimilarityInfo> findSimilarNotKnown(Set<Long> similarIds, Set<Long> knownIds);
 
     List<EventSimilarityInfo> findSimilarKnown(Set<Long> similarIds, Set<Long> knownIds);
 }

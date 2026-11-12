@@ -15,11 +15,11 @@ import ru.practicum.ewm.stats.avro.UserActionAvro;
 import ru.practicum.service.UserActionService;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static ru.practicum.config.KafkaConfig.USER_ACTION_CONFIG_NAME;
 
@@ -34,6 +34,7 @@ public class UserActionProcessor implements Runnable {
     private final Map<TopicPartition, AtomicLong> retryCounts = new HashMap<>();
 
     private Map<TopicPartition, OffsetAndMetadata> offsetsToCommit;
+    private Map<TopicPartition, List<Long>> unprocessedMessages;
 
     private static final long MAX_RETRIES = 3;
     private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(10);
@@ -61,6 +62,7 @@ public class UserActionProcessor implements Runnable {
                 log.trace("Polling records");
                 ConsumerRecords<String, SpecificRecordBase> records = consumer.poll(POLL_TIMEOUT);
                 offsetsToCommit = new HashMap<>();
+                unprocessedMessages = toOffsetMap(records);
 
                 for (ConsumerRecord<String, SpecificRecordBase> record : records) {
                     TopicPartition tp = new TopicPartition(record.topic(), record.partition());
@@ -71,6 +73,7 @@ public class UserActionProcessor implements Runnable {
                                 tp,
                                 new OffsetAndMetadata(record.offset() + 1, "")
                         );
+                        unprocessedMessages.get(tp).remove(record.offset());
                     } catch (Exception e) {
                         handleProcessingError(record, tp, e);
                         break;
@@ -92,7 +95,6 @@ public class UserActionProcessor implements Runnable {
         } catch (Exception e) {
             log.error("Fatal error while working with consumer: {}", e.getMessage());
         } finally {
-            consumer.commitSync(offsetsToCommit);
             consumer.close(CLOSE_TIMEOUT);
         }
     }
@@ -120,8 +122,22 @@ public class UserActionProcessor implements Runnable {
             consumer.wakeup();
         }
 
-        log.debug("Setting seek back to offset {} for partition {}", record.offset(), tp.partition());
+        log.debug("Setting seek back to unprocessed offsets");
+        for (Map.Entry<TopicPartition, List<Long>> entry : unprocessedMessages.entrySet()) {
+            OptionalLong minOffset = entry.getValue().stream().mapToLong(v -> v).min();
+            if (minOffset.isPresent()) {
+                consumer.seek(entry.getKey(), minOffset.getAsLong());
+            }
+        }
+    }
 
-        consumer.seek(tp, record.offset());
+    private static Map<TopicPartition, List<Long>> toOffsetMap(ConsumerRecords<String, SpecificRecordBase> records) {
+        return StreamSupport.stream(
+                        records.spliterator(), false
+                )
+                .collect(Collectors.groupingBy(
+                        record -> new TopicPartition(record.topic(), record.partition()),
+                        Collectors.mapping(ConsumerRecord::offset, Collectors.toList())
+                ));
     }
 }

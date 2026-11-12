@@ -61,7 +61,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .collect(Collectors.toSet());
 
         List<EventSimilarityInfo> similarButNotKnown =
-                similarityService.findSimilarNotKnown(similarIds, knownIds, maxResults);
+                similarityService.findSimilarNotKnown(similarIds, knownIds);
 
         if (similarButNotKnown.isEmpty()) {
             return List.of();
