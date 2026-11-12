@@ -48,7 +48,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         long userId = request.getUserId();
         int maxResults = request.getMaxResults();
 
-        List<UserAction> userActions = actionService.getByUserId(userId, maxResults);
+        List<UserAction> userActions = actionService.getByUserId(userId);
 
         if (userActions.isEmpty()) {
             return List.of();
@@ -89,8 +89,6 @@ public class RecommendationServiceImpl implements RecommendationService {
         List<RecommendedEventProto> result = new ArrayList<>();
         for (var similarEvent : similarButNotKnown) {
             List<EventSimilarityInfo> similarEvents = similarKnown.get(similarEvent.similarId()).stream()
-                    .sorted(Comparator.comparingDouble(EventSimilarityInfo::score).reversed())
-                    .limit(maxResults)
                     .toList();
 
             double sumOfWeight = similarEvents.stream()
@@ -112,7 +110,10 @@ public class RecommendationServiceImpl implements RecommendationService {
 
             result.add(proto);
         }
-        return result;
+        return result.stream()
+                .sorted(Comparator.comparingDouble(RecommendedEventProto::getScore).reversed())
+                .limit(maxResults)
+                .toList();
     }
 
     @Override

@@ -12,7 +12,7 @@ public interface UserActionService {
 
     List<Long> getAllEventIdsByUserId(Long userId);
 
-    List<UserAction> getByUserId(Long userId, Integer maxResults);
+    List<UserAction> getByUserId(Long userId);
 
     List<UserAction> getByUserIdAndEventIdIn(Long userId, Set<Long> eventIds);
 

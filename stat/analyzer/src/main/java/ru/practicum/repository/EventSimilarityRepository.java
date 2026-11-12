@@ -31,7 +31,7 @@ public interface EventSimilarityRepository extends JpaRepository<EventSimilarity
     List<EventSimilarityInfo> findAllByEventId(@Param("eventId") Long eventId);
 
     @Query("""
-            SELECT NEW ru.practicum.view.EventSimilarityInfo( +
+            SELECT NEW ru.practicum.view.EventSimilarityInfo(
             CASE
                 WHEN es.id.eventA IN (:similarIds) THEN es.id.eventA
                 ELSE es.id.eventB
@@ -49,7 +49,7 @@ public interface EventSimilarityRepository extends JpaRepository<EventSimilarity
                                                   Pageable pageable);
 
     @Query("""
-            SELECT NEW ru.practicum.view.EventSimilarityInfo( +
+            SELECT NEW ru.practicum.view.EventSimilarityInfo(
             CASE
                 WHEN es.id.eventA IN (:similarIds) THEN es.id.eventA
                 ELSE es.id.eventB

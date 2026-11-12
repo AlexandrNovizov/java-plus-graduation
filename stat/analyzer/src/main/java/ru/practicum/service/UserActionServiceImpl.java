@@ -59,12 +59,9 @@ public class UserActionServiceImpl implements UserActionService {
     }
 
     @Override
-    public List<UserAction> getByUserId(Long userId, Integer maxResults) {
+    public List<UserAction> getByUserId(Long userId) {
 
-        Sort sort = Sort.by(Sort.Direction.DESC, "action_time");
-        Pageable pageable = PageRequest.of(0, maxResults, sort);
-
-        return repository.findByUserIdLimited(userId, pageable);
+        return repository.findByUserIdLimited(userId);
     }
 
     @Override

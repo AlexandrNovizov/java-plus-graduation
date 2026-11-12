@@ -1,6 +1,5 @@
 package ru.practicum.repository;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,8 +18,8 @@ public interface UserActionRepository extends JpaRepository<UserAction, UserActi
             "WHERE ua.id.userId = :userId")
     List<Long> findAllEventIdsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT ua FROM UserAction ua WHERE ua.id.userId = :userId")
-    List<UserAction> findByUserIdLimited(Long userId, Pageable pageable);
+    @Query("SELECT ua FROM UserAction ua WHERE ua.id.userId = :userId ORDER BY ua.actionTime DESC")
+    List<UserAction> findByUserIdLimited(Long userId);
 
 
     List<UserAction> findByIdUserIdAndIdEventIdIn(Long userId, Set<Long> eventIds);

@@ -41,7 +41,7 @@ public class AggregationStarter {
     private static final Duration POLL_TIMEOUT = Duration.ofSeconds(5);
     private static final String USER_ACTION_TOPIC_KEY = "user.action";
     private static final String EVENT_SIMILARITY_TOPIC_KEY = "event.similarity";
-    private final Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
+    private Map<TopicPartition, OffsetAndMetadata> offsets;
 
 
     public void start() {
@@ -52,6 +52,7 @@ public class AggregationStarter {
 
             while (true) {
                 ConsumerRecords<Long, SpecificRecordBase> records = consumer.poll(POLL_TIMEOUT);
+                offsets = new HashMap<>();
                 for (ConsumerRecord<Long, SpecificRecordBase> record : records) {
                     UserActionAvro userAction = (UserActionAvro) record.value();
                     log.info("received message: {}", userAction);
@@ -76,7 +77,7 @@ public class AggregationStarter {
                     }
                 }
 
-                if (!sentRecordsFutures.isEmpty()) {
+                if (!records.isEmpty()) {
                     try {
                         log.info("Ожидание {} сообщений", sentRecordsFutures.size());
                         for (Future<RecordMetadata> sentRecords : sentRecordsFutures) {
@@ -102,12 +103,12 @@ public class AggregationStarter {
                 offsets.clear();
             }
         } catch (WakeupException ignored) {
-            log.info("Closing consumer");
-            consumer.close(TIMEOUT);
-
+            log.info("Consumer wakeup");
         } catch (Exception e) {
             log.error("Error while handling events from users: ", e);
         } finally {
+            log.info("Closing consumer");
+            consumer.close(TIMEOUT);
             try {
                 log.info("Flushing data");
                 producer.flush();
