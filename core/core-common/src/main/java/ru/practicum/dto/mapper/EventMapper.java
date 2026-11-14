@@ -24,7 +24,7 @@ public class EventMapper {
                 .state(eventFullDto.getState())
                 .paid(eventFullDto.getPaid())
                 .title(stringBuilder(eventFullDto.getTitle()))
-                .views(eventFullDto.getViews())
+                .rating(eventFullDto.getRating())
                 .build();
     }
 
@@ -38,7 +38,7 @@ public class EventMapper {
                 .initiator(eventShortDto.getInitiator())
                 .paid(eventShortDto.getPaid())
                 .title(stringBuilder(eventShortDto.getTitle()))
-                .views(eventShortDto.getViews())
+                .rating(eventShortDto.getRating())
                 .build();
     }
 

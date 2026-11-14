@@ -27,6 +27,6 @@ public class LogEvent {
     private LocationDto locationDto;
     private Boolean requestModeration;
     private String state;
-    private Long views;
+    private Double rating;
     private Long confirmedRequests;
 }

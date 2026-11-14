@@ -29,7 +29,21 @@ public class EventPublicController {
 
     @GetMapping("/{id}")
     public EventFullDto getEventById(@PathVariable @Positive Long id,
+                                     @RequestHeader("X-EWM-USER-ID") @Positive Long userId,
                                      HttpServletRequest request) {
-        return eventService.getPublishedEventById(id, request);
+        return eventService.getPublishedEventById(id, userId, request);
+    }
+
+    @GetMapping("/recommendations")
+    public List<EventShortDto> getRecommendations(@RequestHeader("X-EWM-USER-ID") @Positive Long userId,
+                                                  @RequestParam(value = "limit", required = false, defaultValue = "10") @Positive int limit) {
+        return eventService.getRecommendations(userId, limit);
+    }
+
+    @PutMapping("/{eventId}/like")
+    public void likeEvent(@PathVariable @Positive Long eventId,
+                          @RequestHeader("X-EWM-USER-ID") @Positive Long userId) {
+
+        eventService.likeEvent(eventId, userId);
     }
 }

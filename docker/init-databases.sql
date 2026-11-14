@@ -5,3 +5,4 @@ CREATE DATABASE ewm_events;
 CREATE DATABASE ewm_comments;
 CREATE DATABASE ewm_categories;
 CREATE DATABASE ewm_compilations;
+CREATE DATABASE ewm_recommendations;

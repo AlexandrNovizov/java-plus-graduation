@@ -86,7 +86,7 @@ class CompilationServiceImplTest {
                 .state(EventState.PUBLISHED.toString())
                 .location(new LocationDto(10f, 20f))
                 .confirmedRequests(3L)
-                .views(20L)
+                .rating(.47)
                 .build();
 
         compilation = Compilation.builder()
@@ -122,7 +122,7 @@ class CompilationServiceImplTest {
 
         EventShortDto shortDto = dto.getEvents().iterator().next();
 
-        assertEquals(event.getViews(), shortDto.getViews());
+        assertEquals(event.getRating(), shortDto.getRating());
         assertEquals(event.getConfirmedRequests(), shortDto.getConfirmedRequests());
 
         verify(compilationRepository).findAll(Mockito.<Pageable>any());
@@ -190,7 +190,7 @@ class CompilationServiceImplTest {
 
         EventShortDto shortDto = dto.getEvents().iterator().next();
 
-        assertEquals(event.getViews(), shortDto.getViews());
+        assertEquals(event.getRating(), shortDto.getRating());
         assertEquals(event.getConfirmedRequests(), shortDto.getConfirmedRequests());
 
         verify(compilationRepository).findWithEventsById(1L);
@@ -423,7 +423,7 @@ class CompilationServiceImplTest {
                 .category(dto.getCategory())
                 .initiator(dto.getInitiator())
                 .eventDate(dto.getEventDate())
-                .views(dto.getViews())
+                .rating(dto.getRating())
                 .confirmedRequests(dto.getConfirmedRequests())
                 .paid(dto.getPaid())
                 .build();

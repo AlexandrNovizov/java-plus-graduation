@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package stat.proto;
+
+option java_multiple_files = true;
+option java_package = "ru.practicum.grpc";
+
+message UserPredictionsRequestProto {
+  int64 user_id = 1;
+  int32 max_results = 2;
+}

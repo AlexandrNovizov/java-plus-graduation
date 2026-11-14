@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.practicum.CollectorClient;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventRequestsCountDto;
 import ru.practicum.dto.request.ParticipationRequestDto;
@@ -17,6 +18,7 @@ import ru.practicum.feign.EventFeignClient;
 import ru.practicum.feign.UserFeignClient;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.grpc.ActionTypeProto;
 import ru.practicum.repository.RequestRepository;
 
 import java.time.LocalDateTime;
@@ -38,6 +40,9 @@ class RequestServiceImplTest {
 
     @Mock
     private UserFeignClient userClient;
+
+    @Mock
+    private CollectorClient collectorClient;
 
     @InjectMocks
     private RequestServiceImpl requestService;
@@ -72,6 +77,7 @@ class RequestServiceImplTest {
         when(userClient.findById(userId)).thenReturn(user);
         when(eventClient.findById(eventId)).thenReturn(event);
         when(requestRepository.save(any(Request.class))).thenReturn(savedRequest);
+        doNothing().when(collectorClient).collectUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
 
         ParticipationRequestDto result =
                 requestService.saveRequest(userId, eventId);

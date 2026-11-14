@@ -9,6 +9,7 @@ services:
       timeout: 5s
       interval: 15s
       retries: 10
+      start_period: 10s
 
   config-server:
     build: infra/config-server
@@ -27,8 +28,9 @@ services:
     healthcheck:
       test: "curl --fail --silent http://config-server:8888/actuator/health | grep UP || exit 1"
       timeout: 5s
-      interval: 15s
+      interval: 10s
       retries: 10
+      start_period: 10s
 
   user-service:
     build: core/user-service
@@ -54,7 +56,7 @@ services:
     build: core/request-service
     container_name: request-service
     ports:
-      - "9092:8080"
+      - "9089:8080"
     depends_on:
       config-server:
         condition: service_healthy
@@ -150,26 +152,6 @@ services:
       interval: 15s
       retries: 10
 
-  stats-server:
-    build: stat/stats-server
-    container_name: stats-server
-    ports:
-      - "9097:8080"
-    depends_on:
-      config-server:
-        condition: service_healthy
-      ewm-db:
-        condition: service_healthy
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
-      - SERVER_PORT=8080
-      - DB_URL=jdbc:postgresql://ewm-db:5432/ewm_stats
-    healthcheck:
-      test: "curl --fail --silent stats-server:8080/actuator/health | grep UP || exit 1"
-      timeout: 5s
-      interval: 15s
-      retries: 10
-
   gateway-server:
     build: infra/gateway-server
     container_name: gateway-server
@@ -188,8 +170,6 @@ services:
         condition: service_healthy
       category-service:
         condition: service_healthy
-      stats-server:
-        condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
       - SERVER_PORT=8080
@@ -198,6 +178,99 @@ services:
       timeout: 5s
       interval: 15s
       retries: 10
+
+  kafka:
+    image: confluentinc/confluent-local:7.4.3
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092" # for client connections
+      - "9101:9101" # JMX
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      CLUSTER_ID: 'K0EA9p0yEe6MkAAAAkKsEg'
+
+  kafka-init-topics:
+    image: confluentinc/confluent-local:7.4.3
+    container_name: kafka-init-topics
+    depends_on:
+      - kafka
+    command: "bash -c \
+                'kafka-topics --create --topic stats.user-actions.v1 \
+                             --partitions 1 --replication-factor 1 --if-not-exists \
+                             --bootstrap-server kafka:29092 && \
+                kafka-topics --create --topic stats.events-similarity.v1 \
+                             --partitions 1 --replication-factor 1 --if-not-exists \
+                             --bootstrap-server kafka:29092'"
+    init: true
+
+  collector:
+    build: stat/collector
+    container_name: collector
+    ports:
+      - "9098:50051"
+    depends_on:
+      kafka-init-topics:
+        condition: service_completed_successfully
+      config-server:
+        condition: service_healthy
+    environment:
+      GRPC_SERVER_PORT: 50051
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
+      KAFKA_SERVERS: 'kafka:29092'
+      USER_ACTION_TOPIC: 'stats.user-actions.v1'
+    healthcheck:
+      test: [ "CMD", "/bin/grpc_health_probe", "-addr=:50051", "-connect-timeout=1s", "-rpc-timeout=1s" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  aggregator:
+    build: stat/aggregator
+    container_name: aggregator
+    ports:
+      - "9099:8080"
+    depends_on:
+      collector:
+        condition: service_healthy
+    environment:
+      GRPC_SERVER_PORT: 8080
+      SERVER_PORT: 8081
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
+      KAFKA_SERVERS: 'kafka:29092'
+      USER_ACTION_TOPIC: 'stats.user-actions.v1'
+      EVENT_SIMILARITY_TOPIC: 'stats.events-similarity.v1'
+    healthcheck:
+      test: "curl --fail --silent aggregator:8081/actuator/health | grep UP || exit 1"
+      timeout: 5s
+      interval: 15s
+      retries: 10
+
+  analyzer:
+    build: stat/analyzer
+    container_name: analyzer
+    ports:
+      - "9100:8080"
+    environment:
+      GRPC_SERVER_PORT: 8080
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
+      DB_URL: jdbc:postgresql://ewm-db:5432/ewm_recommendations
+      KAFKA_SERVERS: 'kafka:29092'
+      USER_ACTION_TOPIC: 'stats.user-actions.v1'
+      EVENT_SIMILARITY_TOPIC: 'stats.events-similarity.v1'
+    depends_on:
+      aggregator:
+        condition: service_healthy
+      ewm-db:
+        condition: service_healthy
 
   ewm-db:
     image: postgres:16.1
